@@ -2,8 +2,9 @@ import framebuf
 from machine import SPI, Pin
 import ssd1327
 from time import sleep
+from math import sqrt
 
-# Initialisation de l'affichage et du SPI
+# Initialisation de l'affichage
 spi = SPI(1)
 dc = Pin("DATA_COMMAND_DISPLAY")
 res = Pin("RST_DISPLAY")
@@ -11,8 +12,11 @@ cs = Pin("CS_DISPLAY")
 
 display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
 
-scaled = 104
-factor = scaled // 8 
+# Paramètres de mise à l'échelle
+R = 64  # rayon du cercle de l'écran
+char_pixels = 8 # Taille d'un pixel
+factor = int((R * sqrt(2)) // char_pixels) # Calcul du facteur de mise à l'échelle
+scaled_size = char_pixels * factor  # taille finale du smiley
 
 Smileys = {
     "Eye_hatHat": [
@@ -215,26 +219,28 @@ Smileys = {
         0b00000000,
         0b00000000,
     ],
-    
 }
-
 
 for smiley_name, bitmap in Smileys.items():
     print(f"-> {smiley_name}")
-    if smiley_name == "_":
-        bitmap_bytearray = bytearray(bitmap)
-        STeaMi_buf = framebuf.FrameBuffer(bitmap_bytearray, 8, 8, framebuf.MONO_HLSB) 
+    
+    bitmap_bytearray = bytearray(bitmap)
+    STeaMi_buf = framebuf.FrameBuffer(bitmap_bytearray, 8, 8, framebuf.MONO_HLSB)
 
-        scaled_bitmap = bytearray((scaled * scaled) // 8)
-        scaled_buf = framebuf.FrameBuffer(scaled_bitmap, scaled, scaled, framebuf.MONO_HLSB)
+    scaled_bitmap = bytearray((scaled_size * scaled_size) // 8)
+    scaled_buf = framebuf.FrameBuffer(scaled_bitmap, scaled_size, scaled_size, framebuf.MONO_HLSB)
 
-        for y in range(8):
-            for x in range(8):
-                if STeaMi_buf.pixel(x, y):
-                    scaled_buf.fill_rect(x * factor, y * factor, factor, factor, 255)  
+    # Scaling
+    for y in range(8):
+        for x in range(8):
+            if STeaMi_buf.pixel(x, y):
+                scaled_buf.fill_rect(x * factor, y * factor, factor, factor, 1)
 
-        display.fill(0) 
-        display.framebuf.blit(scaled_buf, 12, 12, 255) 
-        display.show()  
+    # Affichage
+    display.fill(0)
+    x_offset = (128 - scaled_size) // 2
+    y_offset = (128 - scaled_size) // 2
+    display.framebuf.blit(scaled_buf, x_offset, y_offset)
+    display.show()
 
-        sleep(2)
+    sleep(2)
