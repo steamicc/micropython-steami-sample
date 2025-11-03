@@ -21,9 +21,12 @@ scan_interval = 30000  # in us
 scan_window = 30000  # in us
 scan_pause = 0.1  # in seconds
 
+# Paramètre : nombre maximum de mesures stockées par capteur
+MAX_DATA_PER_SENSOR = 100
+
 #constants
-measurement = ["temperature", "humidity"]
-allowed_devices = ["chambre", "salon", "cuisine"]
+measurement = ["temperature", "humidity", "batteryLevel", "batteryPercentage"]
+allowed_devices = ["Nord", "Sud", "Est", "Ouest", "Maison"]
 
 # variables
 collected_data = {}
@@ -33,8 +36,19 @@ measurement_index = 0
 
 # Function to decode the advertising data received from the sensors
 def decode_data(data, sensor_name):
-    temperature = struct.unpack("<h", data[13:15])[0] / 100
-    humidity = struct.unpack("<h", data[3:5])[0] / 100
+    print(f"Raw data {data}")
+
+    for i in range(len(data)):
+        print(f"Raw data [{i}]: {data[i]}")
+        if i < len(data)-1:
+            print(f"Raw data [{i}:{i+2}] in hex : {struct.unpack("<h", data[i:i+2])[0]}")
+
+    temperature = struct.unpack("<h", data[13:15])[0] / 100 # in °C
+    humidity = struct.unpack("<h", data[16:18])[0] / 100 # in %
+    batteryLevel = struct.unpack("<h", data[0:2])[0] / 100 # in Volts (A revoir car données incohérentes)
+    batteryPercentage = data[11] # in %
+
+     # Get the current time
     current_time = time.strftime("%H:%M:%S", time.localtime())
 
     if sensor_name not in collected_data:
@@ -43,10 +57,15 @@ def decode_data(data, sensor_name):
     collected_data[sensor_name].append({
         "time": current_time,
         "temperature": temperature,
-        "humidity": humidity
+        "humidity": humidity,
+        "batteryLevel": batteryLevel,
+        "batteryPercentage": batteryPercentage
     })
 
-    print(f"-> Sensor: {sensor_name} - Temperature:{temperature:.2f} °C, Humidity: {humidity:.2f} % at {current_time}")
+    if len(collected_data[sensor_name]) > MAX_DATA_PER_SENSOR:
+        collected_data[sensor_name].pop(0)
+
+    print(f"-> Sensor: {sensor_name} - Temperature:{temperature:.2f} C, Humidity: {humidity:.2f} %, Battery Level: {batteryLevel:.2f} V, Battery Percentage: {batteryPercentage:.2f} %, at {current_time}")
 
 
 # Function to scan for BLE devices and receive their data tend to fill the memory in 10 min
@@ -65,8 +84,6 @@ async def scan_loop():
                     else:
                         print("==> no adv_data")
             asyncio.sleep(scan_pause)  # Pause between scans
-
-
 
 # Function to display the data on the screen
 async def display_loop():
@@ -119,9 +136,11 @@ async def display_loop():
         if collected_data[name]:
             if measurement[measurement_index] == "temperature":
                 unit = "C"
+            elif measurement[measurement_index] == "batteryLevel":
+                unit = "V"
             else:
                 unit = "%"
-            last_measure = f"{collected_data[name][-1][measurement[measurement_index]]:.2f}{unit}"
+            last_measure = f"{measurement[measurement_index][0].upper()}: {collected_data[name][-1][measurement[measurement_index]]:.2f}{unit}"
             display.text(last_measure, text_x_center_position(last_measure), 100, 255)
 
         # Display the time since the start of the program

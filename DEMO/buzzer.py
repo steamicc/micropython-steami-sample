@@ -1,8 +1,9 @@
 from pins import *
 import time
 import math
+import asyncio
 
-sounds = ["HAPPY", "SAD", "EPIC","PIRATES","EXIT"]
+sounds = ["HAPPY", "SAD", "EPIC","PIRATES","UNDERSEA","EXIT"]
 
 def draw_progress_arc(display, center_x, center_y, radius, percent):
     angle = int(360 * percent)
@@ -87,6 +88,19 @@ def play_sound(sound_index):
             (988, 500)
         ]
         play_song(pirates_song)
+    elif sound_index == 4:
+        # Sous l’océan (La Petite Sirène) simplifié
+        undersea_song = [
+            (392, 300), (440, 300), (494, 300), (440, 300), (392, 300),
+            (330, 300), (392, 400), (0, 100),
+
+            (392, 200), (440, 200), (494, 200), (523, 400),
+            (494, 200), (440, 200), (392, 200), (330, 400),
+
+            (330, 300), (392, 300), (440, 300), (494, 300),
+            (523, 500), (494, 250), (440, 250), (392, 500)
+        ]
+        play_song(undersea_song)
 
 
 async def buzzer_menu():

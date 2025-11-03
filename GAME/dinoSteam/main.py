@@ -36,25 +36,23 @@ B_BUTTON = Pin("B_BUTTON", Pin.IN, Pin.PULL_UP)
 MENU_BUTTON = Pin("MENU_BUTTON", Pin.IN, Pin.PULL_UP)
 
 # Constantes
-GRAVITY = 0.5
-JUMP_SMALL = -5
-JUMP_BIG = -6
 GROUND_Y = 78
 STeaMi_X = 20
+JUMP_SMALL = -5
+JUMP_BIG = -6
 
-# Fonctions
+# Fonctions d'affichage
 def draw_background():
     display.fill(0)
     display.framebuf.line(0, 90, 128, 90, 255)
 
 def draw_STeaMi(x, y):
-    display.framebuf.blit(STeaMi_buf, x, y)
+    # s'assurer que blit reçoit des entiers
+    display.framebuf.blit(STeaMi_buf, int(x), int(y))
 
 def draw_Cactus(x):
-    display.framebuf.blit(Cactus_buf, x, 90 - 6)
-
-def clean_score_zone():
-    display.framebuf.fill_rect(60, 100, 30, 10, 0)
+    # cast en int pour éviter TypeError si x est float
+    display.framebuf.blit(Cactus_buf, int(x), 90 - 6)
 
 async def wait_for_button(button):
     while button.value() != 0:
@@ -70,21 +68,35 @@ async def menu_screen():
     await asyncio.sleep(0.2)  # Anti double appui
 
 async def game_screen():
-    pos_cactus = 120
+    pos_cactus = 120.0      # float pour vitesse décimale
     y_steami = GROUND_Y
-    y_velocity = 0
+    y_velocity = 0.0
     points = 0
 
+    # Variables dynamiques
+    cactus_speed = 1.0      # pixels par frame (float ok)
+    gravity = 0.5
+
+    # limites
+    MAX_CACTUS_SPEED = 6.0
+    SPEED_INCREMENT = 0.15
+    MAX_GRAVITY = 1.5
+    MIN_POS = -10
+
     while True:
-        display.fill(0)
         draw_background()
 
-        # Déplacement cactus
-        pos_cactus -= 1
-        if pos_cactus < -10:
-            pos_cactus = 128
+        # Déplacement cactus (float)
+        pos_cactus -= cactus_speed
+        if pos_cactus < MIN_POS:
+            pos_cactus = 128.0
             points += 1
 
+            # Accélération progressive + lissage
+            cactus_speed = min(cactus_speed + SPEED_INCREMENT, MAX_CACTUS_SPEED)
+            gravity = min(gravity + 0.02, MAX_GRAVITY)
+
+        # Affiche cactus (cast à l'affichage)
         draw_Cactus(pos_cactus)
 
         # Gestion saut
@@ -92,30 +104,29 @@ async def game_screen():
             y_velocity = JUMP_SMALL
         if B_BUTTON.value() == 0 and y_steami == GROUND_Y:
             y_velocity = JUMP_BIG
-        
 
         # Gravité
         y_steami += y_velocity
-        y_velocity += GRAVITY
+        y_velocity += gravity
 
         if y_steami > GROUND_Y:
             y_steami = GROUND_Y
-            y_velocity = 0
+            y_velocity = 0.0
 
         draw_STeaMi(STeaMi_X, int(y_steami))
 
         # Afficher le score
         display.framebuf.text("{}".format(points), 64, 100, 255)
 
-        # Collision simple
-        if (STeaMi_X + 8 > pos_cactus and STeaMi_X < pos_cactus + 5) and (y_steami > 70):
+        # Collision (utiliser int pour comparer correctement)
+        cactus_x = int(pos_cactus)
+        if (STeaMi_X + 8 > cactus_x and STeaMi_X < cactus_x + 5) and (y_steami > 70):
             return points  # Meurt => retourne le score
 
-        # Faire une pause
+        # Pause menu
         if MENU_BUTTON.value() == 0:
             while MENU_BUTTON.value() == 0:
                 await asyncio.sleep(0.02)
-            # Puis attendre un 2e appui pour continuer
             display.framebuf.text("Pause", 40, 40, 255)
             display.show()
             while MENU_BUTTON.value() == 1:
@@ -124,7 +135,7 @@ async def game_screen():
                 await asyncio.sleep(0.02)
 
         display.show()
-        await asyncio.sleep(0.02)
+        await asyncio.sleep(0.02)  # tu peux réduire cette valeur pour accélérer globalement
 
 async def game_over_screen(points):
     display.fill(0)
@@ -142,4 +153,9 @@ async def main():
         await game_over_screen(score)
 
 # Lancer le jeu
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except Exception as e:
+    # Affiche l'erreur sur le REPL pour debug
+    print("Erreur:", e)
+    raise
