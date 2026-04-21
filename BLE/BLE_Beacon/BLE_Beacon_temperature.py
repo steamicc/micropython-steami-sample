@@ -14,10 +14,6 @@ BLE payload:
     - Manufacturer Specific Data: temperature as int16 (x100, in 0.01 C)
 """
 
-import sys
-
-sys.path.insert(0, "/remote")
-
 import bluetooth
 import struct
 import uasyncio as asyncio
