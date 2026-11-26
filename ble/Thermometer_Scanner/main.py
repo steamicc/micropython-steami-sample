@@ -41,7 +41,7 @@ def decode_data(data, sensor_name):
     for i in range(len(data)):
         print(f"Raw data [{i}]: {data[i]}")
         if i < len(data)-1:
-            print(f"Raw data [{i}:{i+2}] in hex : {struct.unpack("<h", data[i:i+2])[0]}")
+            print(f"Raw data [{i}:{i+2}] in hex : {struct.unpack('<h', data[i:i+2])[0]}")
 
     temperature = struct.unpack("<h", data[13:15])[0] / 100 # in °C
     humidity = struct.unpack("<h", data[16:18])[0] / 100 # in %
