@@ -1,0 +1,7 @@
+# Bonding keys written by aioble.security on the board
+ble_secrets.json
+
+# Local tool caches
+.mypy_cache/
+.ruff_cache/
+__pycache__/
