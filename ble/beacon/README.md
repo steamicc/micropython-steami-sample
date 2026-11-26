@@ -1,12 +1,12 @@
 # BLE beacon
 
-Broadcasts a non-connectable BLE advertisement carrying the board name and the temperature measured by the WSEN-PADS sensor. The OLED screen shows the name and the current temperature.
+Broadcasts a non-connectable BLE advertisement carrying the board name and the temperature (WSEN-HIDS on V1a/V1b, BME280 on V1c, chosen by the `steami` layer). The OLED screen shows the name and the current temperature.
 
 First step of the BLE localization path: the other examples (`rssi_proximity`, `hot_cold`, `room_mapper`, `trilateration`) measure the signal strength of such advertisements.
 
 ## Hardware
 
-- 1 STeaMi board
+- 1 STeaMi board (any release; on a V1c the screen stays black, but the advertisement works)
 - A phone with a BLE scanner app (nRF Connect, LightBlue, etc.)
 
 ## Run

@@ -13,7 +13,7 @@ def centerText(text, y):
 
 def measure_average(n, action_before=None, action_after=None):
     """
-    Prend n mesures avec fg.current_average(), fait la moyenne
+    Prend n mesures avec BATTERY.current(), fait la moyenne
     action_before: fonction optionnelle à exécuter avant la série de mesures
     action_after: fonction optionnelle à exécuter après la série de mesures
     """
@@ -23,7 +23,7 @@ def measure_average(n, action_before=None, action_after=None):
         sleep(2)  # temps pour stabiliser
 
     for _ in range(n):
-        val = fg.current_average()
+        val = BATTERY.current()
         values.append(val)
         sleep(1)  # délai entre mesures
 

@@ -4,7 +4,7 @@ import aioble
 import struct
 import urandom
 from time import ticks_ms
-from pins import *   # fg.current_average(), display
+from pins import *   # BATTERY.current(), display
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
@@ -29,7 +29,7 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
         asyncio.sleep(2)
 
     for _ in range(n):
-        val = fg.current_average()
+        val = BATTERY.current()
         values.append(val)
         sleep(0.5)
 

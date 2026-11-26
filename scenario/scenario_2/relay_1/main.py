@@ -92,7 +92,7 @@ async def energy_task():
     global energy_current
     while True:
         try:
-            energy_current = fg.current_average()
+            energy_current = BATTERY.current()
         except Exception:
             energy_current = 0
         await asyncio.sleep(1)

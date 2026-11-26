@@ -3,7 +3,7 @@ import uasyncio as asyncio
 import aioble
 import struct
 from time import ticks_ms
-from pins import *  # contient LED_RED, LED_GREEN, LED_BLUE, display, fg
+from pins import *  # LED_RED, LED_GREEN, LED_BLUE, display, BATTERY
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
@@ -108,7 +108,7 @@ async def display_task():
     while True:
         # Lecture de la consommation énergétique
         try:
-            energy_value = fg.current_average()
+            energy_value = BATTERY.current()
         except Exception as e:
             print("Erreur lecture énergie :", e)
             energy_value = 0.0

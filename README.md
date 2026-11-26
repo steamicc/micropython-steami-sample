@@ -28,9 +28,15 @@ Each example is a folder containing a `main.py` script and the helper modules it
 
 ## ✅ Requirements
 
-* **Hardware**: STeaMi board
-* **Firmware**: the STeaMi MicroPython firmware, which includes the drivers from micropython-steami-lib and `aioble`
+* **Hardware**: STeaMi board, any release (V1a, V1b or V1c)
+* **Firmware**: the STeaMi MicroPython firmware **v0.28.2 or later** from the [micropython-steami-lib releases](https://github.com/steamicc/micropython-steami-lib/releases). It includes the drivers, the `steami` layer and `aioble`.
 * **Tooling**: [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html) (official MicroPython tool)
+
+### Hardware releases
+
+The examples read the sensors through the [`steami` layer](https://github.com/steamicc/micropython-steami-lib/tree/main/lib/steami), which detects the board release and picks the right chip: temperature and humidity come from the WSEN-HIDS on a V1a/V1b and from the BME280 on a V1c. A sensor missing on the board (for example the APDS-9960 light sensor on a V1c) reads as 0 or `nan`, with a one-time `[STeaMi] ... (E20)` message on the console.
+
+On a **V1c**, the round TFT screen (GC9A01) is not supported by MicroPython yet ([micropython-steami-lib#368](https://github.com/steamicc/micropython-steami-lib/issues/368)): the examples run, but the screen stays black. Their console output (`mpremote`) still shows what they do.
 
 ---
 

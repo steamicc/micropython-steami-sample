@@ -1,3 +1,4 @@
+import uasyncio as asyncio
 from relay_base import run
 
-run("STeaMi-R1")
+asyncio.run(run("STeaMi-R1"))
