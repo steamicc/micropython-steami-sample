@@ -23,7 +23,7 @@ Hardware:
     - 2 x STM32WB55 BLE radio
     - SSD1327 128x128 OLED display (round)
     - MCP23009E D-PAD (UP/DOWN/LEFT/RIGHT)
-    - SPEAKER pin (buzzer)
+    - Buzzer on the SPEAKER pin (hardware PWM, Timer 1 channel 4)
 
 Learning goals:
     - Practical application of RSSI to distance
@@ -33,9 +33,8 @@ Learning goals:
     - Asyncio task coordination
 """
 
-import bluetooth
 import uasyncio as asyncio
-from time import sleep_us, ticks_ms, ticks_diff
+from time import ticks_ms, ticks_diff
 
 import aioble
 import ssd1327
@@ -51,14 +50,9 @@ from mcp23009e.const import (
     MCP23009_LOGIC_LOW,
     MCP23009_PULLUP,
 )
+from pyb import Timer
 from steami_screen import BLUE, RED, Screen, SSD1327Display, YELLOW
 
-# === BLE setup ===
-ble = bluetooth.BLE()
-ble.active(True)
-mac_bytes = ble.config("mac")[1]
-mac_suffix = "".join(f"{b:02X}" for b in mac_bytes[-2:])
-DEVICE_NAME = f"STeaMi-{mac_suffix}"
 BEACON_NAME = "Beacon_M1"
 
 # === Display ===
@@ -70,7 +64,11 @@ display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
 screen = Screen(display)
 
 # === Buzzer ===
-speaker = Pin("SPEAKER", Pin.OUT)
+# Hardware PWM on SPEAKER pin (PA11 = TIM1_CH4): the timer generates the
+# square wave, so the event loop stays free while a tone plays.
+buzzer_tim = Timer(1, freq=1000)
+buzzer_ch = buzzer_tim.channel(4, Timer.PWM, pin=Pin("SPEAKER"))
+buzzer_ch.pulse_width_percent(0)
 
 # === Buttons ===
 i2c = I2C(1)
@@ -168,19 +166,12 @@ _exit_requested = False
 
 
 async def tone_async(freq, duration_ms):
-    """Play a short blocking tone, then yield to the event loop."""
-    if freq == 0:
-        await asyncio.sleep_ms(duration_ms)
-        return
-    period_us = int(1_000_000 / freq)
-    half = period_us // 2
-    cycles = (duration_ms * 1000) // period_us
-    for _ in range(cycles):
-        speaker.on()
-        sleep_us(half)
-        speaker.off()
-        sleep_us(half)
-    await asyncio.sleep_ms(0)
+    """Play a tone with the hardware PWM without blocking the event loop."""
+    if freq > 0:
+        buzzer_tim.freq(freq)
+        buzzer_ch.pulse_width_percent(50)
+    await asyncio.sleep_ms(duration_ms)
+    buzzer_ch.pulse_width_percent(0)
 
 
 async def beep_pattern(zone_idx):
@@ -193,11 +184,13 @@ async def beep_pattern(zone_idx):
 
 
 async def _wait_ms(ms):
-    """Wait for up to ms, waking early on exit, signal loss, or zone change."""
+    """Wait for up to ms, waking early on exit, zone change, or when the
+    beacon is found or lost."""
     zone = current_zone_idx
+    seen = beacon_seen
     elapsed = 0
     while elapsed < ms:
-        if _exit_requested or not beacon_seen or current_zone_idx != zone:
+        if _exit_requested or beacon_seen != seen or current_zone_idx != zone:
             return
         await asyncio.sleep_ms(50)
         elapsed += 50
@@ -215,6 +208,7 @@ async def buzzer_task():
         zone = current_zone_idx
         await beep_pattern(zone)
         await _wait_ms(_ZONE_INTERVAL[zone])
+    buzzer_ch.pulse_width_percent(0)
 
 
 # =============================================================================
