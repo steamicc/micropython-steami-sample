@@ -17,7 +17,7 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
 | `button.py`      | Captures and displays button presses in real time.                                                      |
 | `sensors.py`     | Reads temperature, humidity, distance, and light levels, then displays them.                            |
 | `screen.py`      | Showcases graphics capabilities: font rendering, grayscale patterns, 3D animation, and emoji pixel art. |
-| `gesture.py`     | Gesture detection using APDS9960 (non-functional).                                            |
+| `gesture.py`     | Gesture detection with the APDS-9960 (V1a/V1b only; shows "No sensor" on a V1c).              |
 
 ---
 
@@ -38,8 +38,8 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
 ### 🌡 Sensors
 
 * **VL53L1X**: Time-of-Flight distance sensor.
-* **HTS221**: Temperature and humidity.
-* **APDS9960**: Ambient light (gesture sensor partially implemented).
+* **Temperature and humidity**: WSEN-HIDS on V1a/V1b, BME280 on V1c (through `steami`).
+* **APDS-9960**: Ambient light, V1a/V1b only (0 on a V1c).
 * Values updated and displayed in real time.
 
 ### 🎵 Buzzer
@@ -80,8 +80,8 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
 
   * OLED 128x128 SPI (SSD1327)
   * VL53L1X (distance)
-  * HTS221 (humidity/temperature)
-  * APDS9960 (light/gesture)
+  * WSEN-HIDS (V1a/V1b) or BME280 (V1c): humidity/temperature
+  * APDS-9960 (light, V1a/V1b only)
   * 3 tactile buttons (A, B, MENU)
   * 3 LEDs (RED, GREEN, BLUE)
   * Speaker/Buzzer
@@ -100,5 +100,5 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
 
 ## ⚠ Known Limitations
 
-* `gesture.py` is marked as **BROKEN** and doesn't currently provide gesture detection.
+* On a V1c, the screen stays black (no GC9A01 support in MicroPython yet, see micropython-steami-lib#368), and the light and gesture sensors are missing: the demo still runs and prints its menu on the serial console.
 * BLE scan and advertising work asynchronously but might be affected by timing or radio interference.
