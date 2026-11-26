@@ -10,8 +10,10 @@ Hardware:
     - WSEN-PADS pressure + temperature sensor
 
 BLE payload:
+    - Flags: LE General Discoverable, BR/EDR not supported
     - Complete Local Name: "STeaMi-XXXX" (last 2 bytes of MAC address)
-    - Manufacturer Specific Data: temperature as int16 (x100, in 0.01 C)
+    - Manufacturer Specific Data: company ID 0xFFFF (reserved for tests),
+      then the temperature as a little-endian int16 (x100, in 0.01 C)
 """
 
 import bluetooth
@@ -21,7 +23,7 @@ import uasyncio as asyncio
 import aioble
 import ssd1327
 from machine import I2C, SPI, Pin
-from steami_screen import GRAY, GREEN, LIGHT, Screen, SSD1327Display, WHITE
+from steami_screen import Screen, SSD1327Display
 from wsen_pads import WSEN_PADS
 
 # === BLE setup ===
@@ -50,6 +52,10 @@ ADV_INTERVAL_US = 200_000  # 200 ms between advertisements
 ADV_TIMEOUT_MS = 500  # advertise for 500 ms per cycle
 SENSOR_INTERVAL_MS = 1000  # read sensor every 1 second
 
+# Manufacturer Specific Data must start with a 16-bit company identifier.
+# 0xFFFF is reserved by the Bluetooth SIG for tests and prototypes.
+COMPANY_ID = 0xFFFF
+
 # === Shared state ===
 temperature = 0.0
 
@@ -57,18 +63,27 @@ temperature = 0.0
 def build_adv_payload(name, temp_raw):
     """Build a BLE advertising payload.
 
+    Each field is encoded as: length (1 byte), type (1 byte), data.
+    The length counts the type byte plus the data.
+
     Contains:
+        - Flags (type 0x01)
         - Complete Local Name (type 0x09)
-        - Manufacturer Specific Data (type 0xFF): int16 temperature x100
+        - Manufacturer Specific Data (type 0xFF): company ID, then
+          temperature x100 as int16
     """
     payload = bytearray()
+
+    # Flags: 0x02 = LE General Discoverable, 0x04 = BR/EDR not supported
+    payload += bytes((2, 0x01, 0x06))
 
     # Complete Local Name
     name_bytes = name.encode()
     payload += bytes((len(name_bytes) + 1, 0x09)) + name_bytes
 
-    # Manufacturer Specific Data: temperature encoded as int16 (x100)
-    man_data = struct.pack("h", temp_raw)
+    # Manufacturer Specific Data: BLE is little-endian ("<"), so the
+    # company ID (uint16 "H") and the temperature (int16 "h") use "<Hh".
+    man_data = struct.pack("<Hh", COMPANY_ID, temp_raw)
     payload += bytes((len(man_data) + 1, 0xFF)) + man_data
 
     return payload
