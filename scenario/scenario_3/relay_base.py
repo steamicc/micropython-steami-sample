@@ -1,68 +1,52 @@
-import bluetooth
+"""Relay node of scenario 3.
+
+A relay listens to every node, and re-advertises under its own name each new
+message, with one more hop. Together the relays form a mesh: a message from
+P1 reaches P2 even when P2 is out of range of P1.
+"""
+
 import uasyncio as asyncio
 import aioble
-import json
+from mesh import MAX_HOPS, NODES, decode, encode, is_new
 from pins import *
 
-KEY = 0x5A  # Clé XOR simple
+SCAN_MS = 800  # Listen for 800 ms...
+ADV_MS = 300  # ...then re-advertise each new message for 300 ms
 
-def xor_encrypt(data: bytes) -> bytes:
-    return bytes([b ^ KEY for b in data])
-
-def advertising_payload(name=None, manufacturer_data=None):
-    payload = bytearray()
-    if name:
-        name_bytes = name.encode()
-        payload += bytes((len(name_bytes) + 1, 0x09)) + name_bytes
-    if manufacturer_data:
-        payload += bytes((len(manufacturer_data) + 1, 0xFF)) + manufacturer_data
-    return payload
-
-def extract_manufacturer_data(adv_bytes):
-    i = 0
-    while i < len(adv_bytes):
-        length = adv_bytes[i]
-        if length == 0:
-            break
-        type_ = adv_bytes[i + 1]
-        if type_ == 0xFF:
-            return adv_bytes[i + 2 : i + 1 + length]
-        i += 1 + length
-    return None
 
 async def ble_task(device_name):
-    seen_msgs = set()
-    ble = bluetooth.BLE()
-    ble.active(True)
     print(f"Relay {device_name} active")
+    last_seq = {}
 
     while True:
-        async with aioble.scan(800, interval_us=30000, window_us=30000, active=True) as scanner:
+        # === Collect the new messages ===
+        to_forward = []
+        async with aioble.scan(SCAN_MS, interval_us=30000, window_us=30000, active=True) as scanner:
             async for result in scanner:
                 name = result.name()
-                if not name or name == device_name or not name.startswith("STeaMi"):
+                if not name or name == device_name or name not in NODES:
                     continue
-                man = extract_manufacturer_data(result.adv_data)
-                if not man:
+                message = decode(result.adv_data)
+                if not message:
                     continue
-                try:
-                    msg_json = xor_encrypt(man).decode()
-                    msg = json.loads(msg_json)
-                except Exception:
+                src, dst, seq, hop, value = message
+                if src == device_name or hop >= MAX_HOPS or not is_new(last_seq, src, seq):
                     continue
-                msg_id = (msg["src"], msg["dst"], msg["payload"])
-                if msg_id in seen_msgs:
-                    continue
-                seen_msgs.add(msg_id)
-                print(f"{device_name} relays: {msg}")
-                msg["hop"] += 1
-                man_data = xor_encrypt(json.dumps(msg).encode())
-                adv = advertising_payload(name=device_name, manufacturer_data=man_data)
-                try:
-                    await aioble.advertise(interval_us=150_000, adv_data=adv, connectable=False, timeout_ms=500)
-                except Exception:
-                    pass
-        await asyncio.sleep_ms(200)
+                to_forward.append(message)
+
+        # === Forward them, one more hop ===
+        for src, dst, seq, hop, value in to_forward:
+            print(f"{device_name} relays {value} mm from {src} to {dst} (hop {hop + 1})")
+            try:
+                await aioble.advertise(
+                    interval_us=100_000,
+                    adv_data=encode(device_name, src, dst, seq, hop + 1, value),
+                    connectable=False,
+                    timeout_ms=ADV_MS,
+                )
+            except asyncio.TimeoutError:
+                pass  # Normal end of a non-connectable advertisement
+
 
 async def display_task(name):
     while True:
@@ -71,6 +55,7 @@ async def display_task(name):
         display.text("Relay mesh node", 10, 35, 255)
         display.show()
         await asyncio.sleep(0.5)
+
 
 async def run(device_name):
     await asyncio.gather(ble_task(device_name), display_task(device_name))

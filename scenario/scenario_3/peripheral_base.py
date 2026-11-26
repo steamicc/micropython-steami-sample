@@ -1,80 +1,70 @@
-import bluetooth
+"""Peripheral node of scenario 3.
+
+A peripheral measures a distance and sends it to the next peripheral of the
+chain (P1 -> P2 -> P3 -> P1), through the relays. It listens to the relays
+for the messages addressed to it, and lights its LED when the distance
+received is below THRESHOLD_MM.
+"""
+
+import random
+
 import uasyncio as asyncio
 import aioble
-import json
+from mesh import NODES, decode, encode, is_new
 from pins import *
 
-KEY = 0x5A
+THRESHOLD_MM = 300
+ADV_MS = 500  # Advertise each message for 500 ms...
+SCAN_MS = 1000  # ...then listen to the relays for 1 s
 
-ble = bluetooth.BLE()
-ble.active(True)
-local_distance = 0
 
-def xor_encrypt(data: bytes) -> bytes:
-    return bytes([b ^ KEY for b in data])
+def next_peripheral(name):
+    """P1 sends to P2, P2 to P3 and P3 to P1."""
+    peripherals = [n for n in NODES if n.startswith("STeaMi-P")]
+    return peripherals[(peripherals.index(name) + 1) % len(peripherals)]
 
-def advertising_payload(name=None, manufacturer_data=None):
-    payload = bytearray()
-    if name:
-        name_bytes = name.encode()
-        payload += bytes((len(name_bytes) + 1, 0x09)) + name_bytes
-    if manufacturer_data:
-        payload += bytes((len(manufacturer_data) + 1, 0xFF)) + manufacturer_data
-    return payload
 
-def extract_manufacturer_data(adv_bytes):
-    i = 0
-    while i < len(adv_bytes):
-        length = adv_bytes[i]
-        if length == 0:
-            break
-        type_ = adv_bytes[i + 1]
-        if type_ == 0xFF:
-            return adv_bytes[i + 2 : i + 1 + length]
-        i += 1 + length
-    return None
-
-async def ble_task(device_name, relay_name, led):
-    print(f"Peripheral {device_name} active, linked to {relay_name}")
+async def ble_task(device_name, led):
+    dst = next_peripheral(device_name)
+    print(f"Peripheral {device_name} active, sends to {dst}")
+    # Random start: after a reset, the relays would ignore a restart from 0
+    # until it caught up with the last number they saw.
+    seq = random.getrandbits(8)
+    last_seq = {}
 
     while True:
-        # === Lecture capteur + envoi ===
-        local_distance = DISTANCE.read()
-        msg = {"src": device_name, "dst": relay_name, "payload": local_distance, "hop": 0}
-        man_data = xor_encrypt(json.dumps(msg).encode())
-        adv = advertising_payload(name=device_name, manufacturer_data=man_data)
-        try :
+        # === Send the local distance ===
+        distance = DISTANCE.read()
+        seq = (seq + 1) % 256
+        try:
             await aioble.advertise(
-                interval_us=150_000,
-                adv_data=adv,
+                interval_us=100_000,
+                adv_data=encode(device_name, device_name, dst, seq, 0, distance),
                 connectable=False,
-                timeout_ms=500)
-            print("Advertisement done.")
+                timeout_ms=ADV_MS,
+            )
         except asyncio.TimeoutError:
-            print("Advertisement timeout (non-connectable).")
+            pass  # Normal end of a non-connectable advertisement
+        print(f"{device_name} sent {distance} mm to {dst} (seq {seq})")
 
-        # === Réception éventuelle ===
-        async with aioble.scan(500, interval_us=30000, window_us=30000, active=True) as scanner:
+        # === Receive the messages addressed to this peripheral ===
+        async with aioble.scan(SCAN_MS, interval_us=30000, window_us=30000, active=True) as scanner:
             async for result in scanner:
                 name = result.name()
                 if not name or not name.startswith("STeaMi-R"):
                     continue
-                man = extract_manufacturer_data(result.adv_data)
-                if not man:
+                message = decode(result.adv_data)
+                if not message:
                     continue
-                try:
-                    msg_json = xor_encrypt(man).decode()
-                    msg = json.loads(msg_json)
-                except Exception:
+                src, msg_dst, msg_seq, hop, value = message
+                if msg_dst != device_name or not is_new(last_seq, src, msg_seq):
                     continue
-                if msg.get("dst") == device_name:
-                    distance = msg.get("payload", 0)
-                    if distance < 300:
-                        led.on()
-                    else:
-                        led.off()
-                    print(f"{device_name} received {distance} from {name}")
-        await asyncio.sleep_ms(500)
+                if value < THRESHOLD_MM:
+                    led.on()
+                else:
+                    led.off()
+                print(f"{device_name} received {value} mm from {src} via {name} ({hop} hops)")
+
 
 async def display_task(name):
     while True:
@@ -84,8 +74,6 @@ async def display_task(name):
         display.show()
         await asyncio.sleep(0.5)
 
-async def run(device_name, relay_name, led):
-    print("Peripheral base")
-    print(f"Device: {device_name}, Relay: {relay_name}, LED: {led}")
-    print("Starting tasks...")
-    await asyncio.gather(ble_task(device_name, relay_name, led), display_task(device_name))
+
+async def run(device_name, led):
+    await asyncio.gather(ble_task(device_name, led), display_task(device_name))
