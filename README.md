@@ -78,6 +78,7 @@ Each example is a folder containing a `main.py` script and the helper modules it
 * `led/blink/` — basic LED blink
 * `button/set_led_on/` — toggle the RGB LEDs with the A, B and MENU buttons
 * `basic/PWM/Servo_Sweep/` — sweep a servo motor with PWM
+* `ble/beacon/` to `ble/trilateration/` — BLE localization path, from a beacon to indoor positioning (see `ble/README.md`)
 * `ble/STeaMi_adv/` — share distance readings between boards through BLE advertising
 * `ble/STeaMi_talk/` — central and peripheral exchanging data over a BLE connection
 * `game/dinoSteam/` — a simple endless runner game
