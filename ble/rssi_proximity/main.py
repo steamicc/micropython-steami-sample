@@ -19,11 +19,6 @@ Learning goals:
     - Signal averaging to reduce noise
 """
 
-import sys
-
-sys.path.insert(0, "/remote")
-
-import bluetooth
 import uasyncio as asyncio
 from time import sleep_ms
 
@@ -40,14 +35,9 @@ from mcp23009e.const import (
 )
 from steami_screen import GRAY, LIGHT, RED, Screen, SSD1327Display
 
-# === BLE setup ===
-ble = bluetooth.BLE()
-ble.active(True)
-
-mac_bytes = ble.config("mac")[1]
-mac_suffix = "".join(f"{b:02X}" for b in mac_bytes[-2:])
-DEVICE_NAME = f"STeaMi-{mac_suffix}"
-BEACON_NAME = "STeaMi-BEACON"
+# Same name as the first beacon of the hot_cold, room_mapper and
+# trilateration examples: one beacon board serves all of them.
+BEACON_NAME = "Beacon_M1"
 
 # === Display ===
 spi = SPI(1)
@@ -129,7 +119,7 @@ def select_mode():
 
 
 async def beacon_ble_task():
-    """Advertise as STeaMi-BEACON continuously."""
+    """Advertise as BEACON_NAME continuously."""
     adv_payload = build_adv_payload(BEACON_NAME)
     print(f"Beacon mode: advertising as {BEACON_NAME}")
     while True:
@@ -166,6 +156,14 @@ async def run_beacon():
 # =============================================================================
 
 
+def average_rssi(rssi):
+    """Add a sample and return the mean of the last RSSI_SAMPLES samples."""
+    rssi_samples.append(rssi)
+    if len(rssi_samples) > RSSI_SAMPLES:
+        rssi_samples.pop(0)
+    return sum(rssi_samples) // len(rssi_samples)
+
+
 async def scanner_ble_task():
     global current_rssi
     display_counter = 0
@@ -178,8 +176,8 @@ async def scanner_ble_task():
         ) as scanner:
             async for result in scanner:
                 if result.name() == BEACON_NAME:
-                    current_rssi = result.rssi  # Valeur brute directe
-                    print(f"RSSI: {current_rssi} dBm")
+                    current_rssi = average_rssi(result.rssi)
+                    print(f"RSSI: {result.rssi} dBm, average: {current_rssi} dBm")
                     display_counter += 1
                     if display_counter >= 3:
                         display_counter = 0
