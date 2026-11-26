@@ -31,7 +31,6 @@ This project implements a complete BLE-based system using MicroPython, consistin
 * VL53L1X distance sensor (I²C)
 * SSD1327 OLED display (SPI)
 * Buttons: A, B, Menu
-* Optional: HTS221, APDS9960 (included in setup but not essential)
 
 ## How to Use
 

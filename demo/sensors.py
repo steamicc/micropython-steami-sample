@@ -5,15 +5,14 @@ from time import sleep
 def display_sensor():
     display.fill(0)
     display.text("SENSORS", 45, 20)
-    display.text(f"Temp: {round(SENSOR.temperature(), 1)} C", 5, 40)
-    display.text(f"Humid: {round(SENSOR.humidity(), 1)} %", 5, 50)
+    display.text(f"Temp: {round(TEMPERATURE.read(), 1)} C", 5, 40)
+    display.text(f"Humid: {round(HUMIDITY.read(), 1)} %", 5, 50)
     display.text(f"Dist: {DISTANCE.read()}mm", 5, 60)
-    display.text(f"Lum: {apds.ambient_light()}", 5, 70)
+    display.text(f"Lum: {LIGHT.read()}", 5, 70)
     display.show()
 
 async def sensor_menu():
     print("--- SENSORS ---")
-    apds.enable_light_sensor()
 
     display_sensor()
 

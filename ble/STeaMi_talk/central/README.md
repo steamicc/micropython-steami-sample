@@ -18,7 +18,6 @@ This MicroPython project implements a BLE **central device** that scans for peri
 - SSD1327 OLED display (SPI)
 - Buttons (A, B, Menu)
 - RGB LEDs
-- Optional I²C sensors (VL53L1X, HTS221, APDS9960 — initialized but not used directly)
 
 ## File Descriptions
 

@@ -1,4 +1,4 @@
-from pins import *   # Pour accéder à fg.current_average()
+from pins import *   # Pour accéder à BATTERY.current()
 
 # --- Paramètres ---
 N_MEASURES = 10
@@ -15,7 +15,7 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
         action_before()
         sleep(2)  # stabilisation
     for _ in range(n):
-        val = fg.current_average()  # mesure courant
+        val = BATTERY.current()  # mesure courant
         values.append(val)
         sleep(1)
     if action_after:

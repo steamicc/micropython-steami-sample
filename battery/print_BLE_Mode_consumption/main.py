@@ -1,4 +1,4 @@
-from pins import *   # pour fg.current_average() et display si dispo
+from pins import *   # pour BATTERY.current() et display si dispo
 
 import bluetooth
 import aioble
@@ -20,7 +20,7 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
         sleep(1)  # stabilisation
 
     for _ in range(n):
-        val = fg.current_average()   # ton instrument de mesure
+        val = BATTERY.current()   # ton instrument de mesure
         values.append(val)
         sleep(0.5)
 

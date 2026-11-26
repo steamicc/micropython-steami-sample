@@ -17,7 +17,7 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
         sleep(2)  # temps de stabilisation
 
     for _ in range(n):
-        val = fg.current_average()  # lecture courant (mA)
+        val = BATTERY.current()  # lecture courant (mA)
         values.append(val)
         sleep(0.5)
 

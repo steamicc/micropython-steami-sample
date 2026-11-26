@@ -17,8 +17,6 @@ This project implements a Bluetooth Low Energy (BLE) peripheral device using Mic
 * Microcontroller with BLE support (e.g. Pyboard D-series)
 * VL53L1X time-of-flight sensor (I²C)
 * SSD1327 OLED display (SPI)
-* HTS221 (optional, I²C sensor included but not used in logic)
-* APDS9960 (optional, I²C sensor included but not used in logic)
 * 3 Buttons (A, B, Menu)
 * RGB LEDs
 

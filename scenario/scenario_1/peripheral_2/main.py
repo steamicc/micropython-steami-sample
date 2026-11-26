@@ -77,7 +77,7 @@ async def ble_task():
 async def energy_task():
     global energy_current
     while True:
-        energy_current = fg.current_average()
+        energy_current = BATTERY.current()
         await asyncio.sleep(1)
 
 async def display_task():

@@ -42,7 +42,7 @@ async def measure_average(duration_s=1, label=""):
     values = []
     start = time.ticks_ms()
     while time.ticks_diff(time.ticks_ms(), start) < duration_s * 1000:
-        val = fg.current_average()
+        val = BATTERY.current()
         values.append(val)
         await asyncio.sleep(0.25)
     avg = sum(values) / len(values) if values else 0

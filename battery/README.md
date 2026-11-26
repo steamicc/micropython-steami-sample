@@ -2,7 +2,7 @@
 
 Ce dossier contient une série de programmes MicroPython permettant de **mesurer la consommation électrique** de la carte STeaMi dans différents scénarios d’utilisation (BLE, capteurs, périphériques).
 
-Les scripts utilisent un instrument externe (`fg.current_average()`) pour relever le courant consommé (en mA) et affichent les résultats sur la console et l’écran OLED.
+Les scripts relèvent le courant consommé (en mA) avec la jauge de batterie BQ27441 (`BATTERY.current()`, couche `steami`) et affichent les résultats sur la console et l’écran OLED.
 
 ---
 
