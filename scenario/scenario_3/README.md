@@ -1,12 +1,12 @@
-# 🛰️ STeaMi – Réseau BLE Maillé Chiffré (3 Relais & 3 Périphériques) (Non-fonctionnelle)
+# 🛰️ STeaMi – Réseau BLE Maillé (3 Relais & 3 Périphériques)
 
 Ce projet MicroPython met en œuvre un **réseau maillé Bluetooth Low Energy (BLE)** entre **6 nœuds** :  
 3 **périphériques capteurs** (`STeaMi-P1`, `STeaMi-P2`, `STeaMi-P3`)  
 et 3 **relais de communication** (`STeaMi-R1`, `STeaMi-R2`, `STeaMi-R3`).
 
-Chaque périphérique lit une **distance** à partir de son capteur, **chiffre** la donnée, puis l’envoie à son relais associé.  
-Les relais forment ensuite un **maillage complet** — ils s’échangent et retransmettent les messages de manière distribuée.  
-Chaque périphérique suivant dans la chaîne reçoit et **analyse** la donnée du précédent.
+Chaque périphérique lit une **distance** avec son capteur, **masque** la donnée par un XOR, puis l’envoie au **périphérique suivant** de la chaîne (P1 → P2 → P3 → P1).
+Les relais forment un **maillage complet** : ils retransmettent les messages de manière distribuée, si bien qu’un message arrive même quand son destinataire est hors de portée de l’émetteur.
+Chaque périphérique reçoit ainsi la distance du précédent et allume sa LED en fonction.
 
 ---
 
@@ -68,28 +68,29 @@ Chaque relais communique avec :
 
 ---
 
-## 🔐 Chiffrement
+## 🔐 Format des messages
 
-Toutes les communications BLE entre nœuds sont **chiffrées par un XOR simple** avec une clé commune :
+Une annonce BLE classique contient **31 octets au maximum**. Le message est donc codé en binaire dans le champ « manufacturer data », derrière l’identifiant de fabricant `0xFFFF` (réservé aux tests) :
+
+| Champ | Type | Contenu |
+| --- | --- | --- |
+| `src` | `uint8` | Émetteur d’origine (indice dans `NODES` : 0 = P1 … 5 = R3) |
+| `dst` | `uint8` | Destinataire |
+| `seq` | `uint8` | Numéro de séquence de l’émetteur (0 à 255, puis recommence) |
+| `hop` | `uint8` | Nombre de relais traversés |
+| `value` | `int16` | Distance en mm |
+
+Ces 6 octets sont masqués par un **XOR** avec une clé commune. Ce n’est pas un vrai chiffrement : il suffit de connaître la clé, ou d’essayer les 256 valeurs possibles.
 
 ```python
 KEY = 0x5A
 def xor_encrypt(data):
-    return bytes([b ^ KEY for b in data])
+    return bytes(b ^ KEY for b in data)
 ```
 
-Chaque message BLE contient une trame JSON chiffrée dans le champ "manufacturer data" :
+Avec le nom du nœud (`STeaMi-P1`) et le champ Flags, l’annonce fait **24 octets**. Le format est défini dans `mesh.py`, commun aux périphériques et aux relais.
 
-```json
-{
-  "src": "STeaMi-P1",
-  "dst": "STeaMi-R1",
-  "payload": 254,
-  "hop": 0
-}
-```
-
-Le champ `hop` est incrémenté à chaque relais pour éviter les boucles infinies.
+Le champ `hop` est incrémenté à chaque relais : au-delà de `MAX_HOPS` (3), le message n’est plus retransmis, ce qui évite les boucles infinies.
 
 ---
 
@@ -97,48 +98,50 @@ Le champ `hop` est incrémenté à chaque relais pour éviter les boucles infini
 
 1. Périphérique
     * Lit la distance (`DISTANCE.read()`)
-    * Chiffre la valeur avec `xor_encrypt`
-    * L’envoie via BLE à son relais associé (ex. `P1` → `R1`)
-    * Scanne ensuite le réseau pour recevoir les messages lui étant destinés
+    * L’annonce pendant 500 ms, à destination du périphérique suivant (`P1` → `P2`), avec un nouveau numéro de séquence
+    * Écoute ensuite les relais pendant 1 s pour recevoir les messages qui lui sont destinés
 2. Relais
-    * Scanne en continu le réseau BLE
-    * Déchiffre les messages reçus
-    * Évite les doublons avec un cache `seen_msgs`
-    * Retransmet les messages à tous les autres relais et périphériques
+    * Écoute tous les nœuds pendant 800 ms
+    * Ignore les messages déjà vus : il retient le dernier numéro de séquence de chaque émetteur
+    * Retransmet chaque nouveau message sous son propre nom, avec `hop + 1`
 3. Bouclage
-    * Le message de `P1` est reçu par `R1`
-    * `R1` diffuse à `R2` et `R3`
-    * `R2` le rediffuse, jusqu’à atteindre `P2`
-    * `P2` déchiffre et réagit (LED ON/OFF)
+    * Le message de `P1` est reçu par les relais à portée, par exemple `R1`
+    * `R1` le retransmet ; `R2` et `R3` le retransmettent à leur tour s’ils ne l’ont pas déjà vu
+    * `P2` reçoit le message d’un relais et réagit (LED allumée ou éteinte)
 
 ---
 
 ## 💡 Comportement des LEDs
 
-| Périphérique | LED active si distance < 300 | LED active si distance ≥ 300 |
-| ------------ | ---------------------------- | ---------------------------- |
-| `STeaMi-P1`  | 🟢 **Verte**                 | 🔴 **Rouge**                 |
-| `STeaMi-P2`  | 🔴 **Rouge**                 | 🔵 **Bleue**                 |
-| `STeaMi-P3`  | 🔵 **Bleue**                 | 🟢 **Verte**                 |
+Chaque périphérique allume sa LED quand la **distance reçue du périphérique précédent** est inférieure à 300 mm (`THRESHOLD_MM`), et l’éteint sinon :
 
-Chaque périphérique s’allume selon la **distance reçue du périphérique précédent.**
+| Périphérique | Réagit à    | LED       |
+| ------------ | ----------- | --------- |
+| `STeaMi-P1`  | `STeaMi-P3` | 🟢 Verte  |
+| `STeaMi-P2`  | `STeaMi-P1` | 🔴 Rouge  |
+| `STeaMi-P3`  | `STeaMi-P2` | 🔵 Bleue  |
 
 Exemple :
-* `P1` mesure `250 cm` → envoie à `R1`
-* `R1` → `R2` → `R3` → `P2`
+* `P1` mesure `250 mm` → l’annonce pour `P2`
+* `R1` (puis éventuellement `R2`, `R3`) retransmet
 * `P2` reçoit `250` → allume sa LED rouge car `< 300`
 
 ## ⚙️ Fichiers principaux
 
+`mesh.py` définit :
+* La liste des nœuds (`NODES`) et le format binaire des messages
+* `encode()` et `decode()`, avec le masquage XOR
+* `is_new()`, qui écarte les messages déjà vus d’après leur numéro de séquence
+
 `relay_base.py` gère :
 * Le scan BLE
-* Le déchiffrement et la redistribution
-* L’évitement de doublons (seen_msgs)
+* Le décodage et la retransmission (`hop + 1`, limite `MAX_HOPS`)
+* L’évitement des doublons
 * L’affichage de l’état sur écran
 
 `peripheral_base.py` gère :
 * La lecture capteur
-* L’émission BLE chiffrée
+* L’émission BLE vers le périphérique suivant
 * La réception de messages
 * Le contrôle des LEDs
 * L’affichage local
@@ -159,28 +162,31 @@ display = ...   # Objet OLED/I2C
 
 | Nœud | Fichier à exécuter    | Fonction                    |
 | ---- | --------------------- | --------------------------- |
-| P1   | `scenario/scenario_3/peripheral_1/main.py` | Capteur distance, LED verte |
+| P1   | `scenario/scenario_3/peripheral_1/main.py` | Réagit à P3, LED verte      |
 | P2   | `scenario/scenario_3/peripheral_2/main.py` | Réagit à P1, LED rouge      |
 | P3   | `scenario/scenario_3/peripheral_3/main.py` | Réagit à P2, LED bleue      |
-| R1   | `scenario/scenario_3/relay_1/main.py` | Relais de P1                |
-| R2   | `scenario/scenario_3/relay_2/main.py` | Relais de P2                |
-| R3   | `scenario/scenario_3/relay_3/main.py` | Relais de P3                |
+| R1   | `scenario/scenario_3/relay_1/main.py` | Relais du maillage          |
+| R2   | `scenario/scenario_3/relay_2/main.py` | Relais du maillage          |
+| R3   | `scenario/scenario_3/relay_3/main.py` | Relais du maillage          |
+
+Chaque nœud importe `pins.py`, `mesh.py` et `peripheral_base.py` ou `relay_base.py`, placés dans `scenario/scenario_3/`. Monter ce dossier, puis lancer le `main.py` du nœud :
+
+```bash
+cd scenario/scenario_3
+mpremote mount . exec "import sys; sys.path.insert(0, '/remote/peripheral_2'); import main"
+```
 
 ---
 
 ## 📋 Exemple de log série
 
 ```
-Device name: STeaMi-R1
 Relay STeaMi-R1 active
-Received: {"src":"STeaMi-P1","dst":"STeaMi-R1","payload":250,"hop":0}
-Relaying message to mesh...
-Advertisement done.
+STeaMi-R1 relays 250 mm from STeaMi-P1 to STeaMi-P2 (hop 1)
 
-Device name: STeaMi-P2
-Peripheral STeaMi-P2 active
-Received distance 250 from R1
-LED_RED ON
+Peripheral STeaMi-P2 active, sends to STeaMi-P3
+STeaMi-P2 sent 812 mm to STeaMi-P3 (seq 43)
+STeaMi-P2 received 250 mm from STeaMi-P1 via STeaMi-R1 (1 hops)
 ```
 
 ---
@@ -188,16 +194,15 @@ LED_RED ON
 ## 🧩 Avantages du système
 
 ✅ Maillage complet BLE : pas de point de défaillance unique
-✅ Chiffrement basique intégré : confidentialité des échanges
+✅ Masquage XOR : les données ne sont pas lisibles en clair (sans être un vrai chiffrement)
 ✅ Propagation multi-sauts : communication indirecte fiable
 ✅ Architecture modulaire : facile à étendre à N relais / N périphériques
-✅ Visualisation OLED : affichage local clair des distances
+✅ Visualisation OLED : affichage local de l’état (V1a/V1b ; l’écran d’une V1c reste noir pour l’instant)
 
 --- 
 
 ## 🚀 Extensions possibles
 
-* 🔄 Ajouter une gestion TTL pour les paquets (limiter les boucles)
 * 🧠 Implémenter un chiffrement AES pour sécuriser réellement le réseau
 * 🕹️ Utiliser des services BLE GATT pour des échanges bidirectionnels fiables
 * 🧩 Ajouter une topologie dynamique (auto-maillage)
