@@ -8,12 +8,12 @@ def display_sensor():
     display.text(f"Temp: {round(SENSOR.temperature(), 1)} C", 5, 40)
     display.text(f"Humid: {round(SENSOR.humidity(), 1)} %", 5, 50)
     display.text(f"Dist: {DISTANCE.read()}mm", 5, 60)
-    display.text(f"Lum: {apds.readAmbientLight()}mm", 5, 70)
+    display.text(f"Lum: {apds.ambient_light()}", 5, 70)
     display.show()
 
 async def sensor_menu():
     print("--- SENSORS ---")
-    apds.enableLightSensor()
+    apds.enable_light_sensor()
 
     display_sensor()
 
