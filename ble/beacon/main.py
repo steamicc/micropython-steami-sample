@@ -1,13 +1,14 @@
 """BLE beacon advertising example using aioble and SSD1327 OLED.
 
 Broadcasts a BLE advertisement containing the board name and a live
-temperature reading from the WSEN-PADS sensor. The beacon is visible
+temperature reading. The beacon is visible
 from any BLE scanner app (nRF Connect, LightBlue, etc.).
 
 Hardware:
     - STM32WB55 BLE radio
     - SSD1327 128x128 OLED display (round)
-    - WSEN-PADS pressure + temperature sensor
+    - Temperature sensor, chosen by steami for the board release:
+      WSEN-HIDS on V1a/V1b, BME280 on V1c
 
 BLE payload:
     - Flags: LE General Discoverable, BR/EDR not supported
@@ -22,9 +23,9 @@ import uasyncio as asyncio
 
 import aioble
 import ssd1327
-from machine import I2C, SPI, Pin
+from machine import SPI, Pin
 from steami_screen import Screen, SSD1327Display
-from wsen_pads import WSEN_PADS
+from steami import Temperature
 
 # === BLE setup ===
 ble = bluetooth.BLE()
@@ -44,8 +45,7 @@ display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
 screen = Screen(display)
 
 # === Sensor ===
-i2c = I2C(1)
-pads = WSEN_PADS(i2c)
+temperature_sensor = Temperature()
 
 # === BLE parameters ===
 ADV_INTERVAL_US = 200_000  # 200 ms between advertisements
@@ -90,13 +90,13 @@ def build_adv_payload(name, temp_raw):
 
 
 async def sensor_task():
-    """Read temperature from WSEN-PADS every second."""
+    """Read the temperature every second."""
     global temperature
     while True:
-        try:
-            temperature = pads.temperature()
-        except Exception as e:
-            print("Sensor error:", e)
+        value = temperature_sensor.read()
+        # read() returns nan when no sensor answers: keep the last value.
+        if value == value:
+            temperature = value
         await asyncio.sleep_ms(SENSOR_INTERVAL_MS)
 
 
