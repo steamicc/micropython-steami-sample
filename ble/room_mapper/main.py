@@ -27,13 +27,8 @@ Learning goals:
     - Introduction to radio fingerprinting
 """
 
-import sys
-
-sys.path.insert(0, "/remote")
-
-import bluetooth
 import uasyncio as asyncio
-from time import sleep_ms
+from time import sleep_ms, ticks_diff, ticks_ms
 
 import aioble
 import ssd1327
@@ -51,26 +46,23 @@ from mcp23009e.const import (
     MCP23009_LOGIC_LOW,
     MCP23009_PULLUP,
 )
-from steami_screen import LIGHT, GRAY, Screen, SSD1327Display
-
-# === BLE setup ===
-ble = bluetooth.BLE()
-ble.active(True)
-
-mac_bytes = ble.config("mac")[1]
-mac_suffix = "".join(f"{b:02X}" for b in mac_bytes[-2:])
-DEVICE_NAME = f"STeaMi-{mac_suffix}"
+from steami_screen import LIGHT, Screen, SSD1327Display
 
 # === Beacon names ===
 BEACON_NAMES = ["Beacon_M1", "Beacon_M2", "Beacon_M3"]
 
-# === RSSI calibration offsets (environment-specific) ===
-# Adjust these values based on your hardware measurements at contact distance.
+# === RSSI calibration offsets (dB, specific to your boards) ===
+# Two boards at the same distance may not report the same RSSI. To
+# compare the beacons, put the scanner against each beacon in turn, note
+# the RSSI shown, and add the offset that brings them to the same value.
 RSSI_OFFSET = {
     "Beacon_M1": 0,
-    "Beacon_M2": 28,
-    "Beacon_M3": 28,
+    "Beacon_M2": 0,
+    "Beacon_M3": 0,
 }
+
+# A beacon not heard for this long is shown as "---" and not recorded.
+RSSI_MAX_AGE_MS = 3000
 
 # === Display ===
 spi = SPI(1)
@@ -124,6 +116,22 @@ def wait_released(btn):
     """Wait until button is released."""
     while is_pressed(btn):
         sleep_ms(20)
+
+
+async def wait_released_async(btn):
+    """Wait until button is released, letting the other tasks run."""
+    while is_pressed(btn):
+        await asyncio.sleep_ms(20)
+
+
+def fresh_rssi():
+    """Return {beacon_name: rssi} for the beacons heard recently."""
+    now = ticks_ms()
+    return {
+        name: rssi
+        for name, (rssi, seen_at) in current_rssi.items()
+        if ticks_diff(now, seen_at) < RSSI_MAX_AGE_MS
+    }
 
 
 def menu_select(title, items):
@@ -184,7 +192,7 @@ async def beacon_button_task():
     global stop_flag
     while not stop_flag:
         if is_pressed(MCP23009_BTN_LEFT):
-            wait_released(MCP23009_BTN_LEFT)
+            await wait_released_async(MCP23009_BTN_LEFT)
             stop_flag = True
             return
         await asyncio.sleep_ms(100)
@@ -217,7 +225,8 @@ async def scanner_ble_task():
             async for result in scanner:
                 name = result.name()
                 if name in BEACON_NAMES:
-                    current_rssi[name] = result.rssi + RSSI_OFFSET.get(name, 0)
+                    rssi = result.rssi + RSSI_OFFSET.get(name, 0)
+                    current_rssi[name] = (rssi, ticks_ms())
 
 
 async def scanner_display_task():
@@ -226,10 +235,11 @@ async def scanner_display_task():
 
     while not stop_flag:
         if is_pressed(MCP23009_BTN_RIGHT):
-            wait_released(MCP23009_BTN_RIGHT)
-            if current_rssi:
+            await wait_released_async(MCP23009_BTN_RIGHT)
+            measures = fresh_rssi()
+            if measures:
                 point_id += 1
-                for name, rssi in current_rssi.items():
+                for name, rssi in measures.items():
                     line = f"{point_id},{name},{rssi}"
                     flash.write_line(line)
                     print(line)
@@ -237,7 +247,7 @@ async def scanner_display_task():
                 screen.clear()
                 screen.title(f"Point {point_id} OK")
                 screen.subtitle(
-                    f"{len(current_rssi)} beacons",
+                    f"{len(measures)} beacons",
                     "RIGHT: next",
                     "LEFT: stop",
                 )
@@ -245,7 +255,7 @@ async def scanner_display_task():
                 await asyncio.sleep_ms(800)
 
         elif is_pressed(MCP23009_BTN_LEFT):
-            wait_released(MCP23009_BTN_LEFT)
+            await wait_released_async(MCP23009_BTN_LEFT)
             stop_flag = True
             break
 
@@ -253,14 +263,15 @@ async def scanner_display_task():
             screen.clear()
             screen.title("ROOM MAPPER")
 
+            measures = fresh_rssi()
             cx, cy = screen.center
             y = 38
             for name in BEACON_NAMES:
-                rssi = current_rssi.get(name, "---")
+                rssi = measures.get(name, "---")
                 short = name[-2:]
                 label = f"{short}: {rssi} dBm"
                 x = cx - len(label) * 4
-                screen._d.text(label, x, y, LIGHT)
+                display.text(label, x, y, LIGHT)
                 y += 14
 
             screen.subtitle(f"#{point_id} R:rec L:stop")
