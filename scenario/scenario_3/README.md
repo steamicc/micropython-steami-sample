@@ -159,12 +159,12 @@ display = ...   # Objet OLED/I2C
 
 | Nœud | Fichier à exécuter    | Fonction                    |
 | ---- | --------------------- | --------------------------- |
-| P1   | `SCENARIO/P1/main.py` | Capteur distance, LED verte |
-| P2   | `SCENARIO/P2/main.py` | Réagit à P1, LED rouge      |
-| P3   | `SCENARIO/P3/main.py` | Réagit à P2, LED bleue      |
-| R1   | `SCENARIO/R1/main.py` | Relais de P1                |
-| R2   | `SCENARIO/R2/main.py` | Relais de P2                |
-| R3   | `SCENARIO/R3/main.py` | Relais de P3                |
+| P1   | `scenario/scenario_3/peripheral_1/main.py` | Capteur distance, LED verte |
+| P2   | `scenario/scenario_3/peripheral_2/main.py` | Réagit à P1, LED rouge      |
+| P3   | `scenario/scenario_3/peripheral_3/main.py` | Réagit à P2, LED bleue      |
+| R1   | `scenario/scenario_3/relay_1/main.py` | Relais de P1                |
+| R2   | `scenario/scenario_3/relay_2/main.py` | Relais de P2                |
+| R3   | `scenario/scenario_3/relay_3/main.py` | Relais de P3                |
 
 ---
 

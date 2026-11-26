@@ -32,13 +32,13 @@ Depuis le dossier du projet :
 
 ```bash
 cd /home/nedjar/sandbox/micropython-steami-sample
-mpremote mount . run BASIC/PWM/Servo_Sweep/main.py
+mpremote mount . run basic/PWM/Servo_Sweep/main.py
 ```
 
-Ou depuis le dossier `BASIC/PWM/Servo_Sweep` :
+Ou depuis le dossier `basic/PWM/Servo_Sweep` :
 
 ```bash
-cd BASIC/PWM/Servo_Sweep
+cd basic/PWM/Servo_Sweep
 mpremote mount /home/nedjar/sandbox/micropython-steami-sample run main.py
 ```
 

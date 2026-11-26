@@ -1,6 +1,8 @@
-# MicroPython STEAMI Sample
+# MicroPython STeaMi Sample
 
-A collection of MicroPython sample scripts for the **STM32WB55** microcontroller. These examples demonstrate a wide range of features such as LED control, button input, BLE communication, sensor reading, display management, and simple games — ideal for STEAM education and embedded experimentation.
+A collection of MicroPython sample scripts for the **STeaMi** board (STM32WB55). These examples show LED control, button input, BLE communication, battery consumption measurement, small games and multi-board scenarios, for STEAM education and embedded experimentation.
+
+Driver-specific examples (sensors, OLED screen, D-PAD, etc.) live next to their driver in [micropython-steami-lib](https://github.com/steamicc/micropython-steami-lib/tree/main/lib), in each `lib/<driver>/examples/` folder.
 
 ---
 
@@ -9,26 +11,26 @@ A collection of MicroPython sample scripts for the **STM32WB55** microcontroller
 ```
 micropython-steami-sample/
 │
-├── BLE/        # Bluetooth Low Energy communication
-├── BUTTON/     # Button input examples
-├── DEMO/       # Combined demos (e.g., sensors + screen)
-├── GAME/       # Mini games in MicroPython
-├── LED/        # LED control and animations
-├── SCREEN/     # Display output examples (e.g., OLED)
-├── SENSOR/     # Sensor data acquisition
+├── basic/      # Basic peripherals (PWM, servo)
+├── battery/    # Power consumption measurements with the fuel gauge
+├── ble/        # Bluetooth Low Energy communication
+├── button/     # Button input examples
+├── demo/       # Combined demo (menu, sensors, screen, BLE)
+├── game/       # Mini games (dino, snake, tic-tac-toe)
+├── led/        # LED control
+├── robot/      # Keyestudio KS4034F robot car
+└── scenario/   # Multi-board BLE scenarios (peripherals and relays)
 ```
 
-Each folder contains example `.py` scripts you can run directly on your STM32WB55 board.
+Each example is a folder containing a `main.py` script, plus the helper modules it imports (`pins.py`, etc.).
 
 ---
 
 ## ✅ Requirements
 
-* **Hardware**: STM32WB55 development board
-* **Firmware**: MicroPython for STM32WB55 (flashed)
-* **Tooling**:
-
-  * [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html) (official MicroPython tool)
+* **Hardware**: STeaMi board
+* **Firmware**: the STeaMi MicroPython firmware, which includes the drivers from micropython-steami-lib and `aioble`
+* **Tooling**: [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html) (official MicroPython tool)
 
 ---
 
@@ -46,21 +48,25 @@ Each folder contains example `.py` scripts you can run directly on your STM32WB5
    mpremote connect list
    ```
 
-3. **Upload and run a script**:
-
-   For example, to run the LED blink demo:
+3. **Run an example without copying it**. Mounting the example folder makes its helper modules (`pins.py`, etc.) importable:
 
    ```bash
-   mpremote connect auto fs cp LED/blink.py :main.py
-   mpremote connect auto reset
+   cd led/blink
+   mpremote mount . run main.py
    ```
 
-   This copies the script to your board and sets it to run on boot.
-
-4. **Open a REPL (optional)**:
+4. **Or install it so that it runs on boot**:
 
    ```bash
-   mpremote connect auto
+   cd led/blink
+   mpremote cp *.py :
+   mpremote reset
+   ```
+
+5. **Open a REPL (optional)**:
+
+   ```bash
+   mpremote
    ```
 
    Then press `Ctrl+C` to stop current execution or `Ctrl+D` to soft reset.
@@ -69,8 +75,11 @@ Each folder contains example `.py` scripts you can run directly on your STM32WB5
 
 ## 🧪 Examples
 
-* `LED/blink.py` — basic LED blink
-* `BUTTON/read_button.py` — detect button press
-* `BLE/advertiser.py` — advertise as BLE device
-* `SCREEN/oled_demo.py` — print to OLED screen
-* `GAME/dinoSteam.py` — a simple built-in game
+* `led/blink/` — basic LED blink
+* `button/set_led_on/` — toggle the RGB LEDs with the A, B and MENU buttons
+* `basic/PWM/Servo_Sweep/` — sweep a servo motor with PWM
+* `ble/STeaMi_adv/` — share distance readings between boards through BLE advertising
+* `ble/STeaMi_talk/` — central and peripheral exchanging data over a BLE connection
+* `game/dinoSteam/` — a simple endless runner game
+* `battery/` — measure the current drawn by each peripheral
+* `scenario/` — multi-board BLE mesh scenarios
