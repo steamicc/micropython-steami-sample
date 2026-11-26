@@ -1,4 +1,4 @@
-# # BROKEN 
+# # BROKEN
 
 
 # from pins import *
@@ -35,7 +35,7 @@
 #     print("--- GESTURE ---")
 #     apds.setProximityIntLowThreshold(50)
 #     apds.enableGestureSensor()
-    
+
 #     while True:
 #         if MENU_BUTTON.value() == 0:
 #             sleep(0.2)

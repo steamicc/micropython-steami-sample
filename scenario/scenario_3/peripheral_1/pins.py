@@ -1,6 +1,5 @@
 import asyncio
 from time import sleep
-from pyb import Pin
 
 import ssd1327
 

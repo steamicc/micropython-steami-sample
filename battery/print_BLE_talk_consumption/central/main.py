@@ -1,4 +1,3 @@
-from micropython import const
 import asyncio
 import aioble
 import bluetooth
@@ -80,7 +79,7 @@ async def connect_to_device(device, name):
     global active_connection, scan_active
 
     try:
-        task_measure = asyncio.create_task(measure_average(5,"Connexion"))
+        asyncio.create_task(measure_average(5,"Connexion"))
         connection = await device.connect(timeout_ms=5000)
         active_connection = connection
     except asyncio.TimeoutError:
@@ -105,7 +104,7 @@ async def connect_to_device(device, name):
 
         while connection.is_connected() and not scan_active:
             try:
-                task_measure = asyncio.create_task(measure_average(1,"Connecte"))
+                asyncio.create_task(measure_average(1,"Connecte"))
                 raw = await temp_char.read()
                 distance_mm = struct.unpack("<h", raw)[0]
                 print("Distance:", distance_mm)
@@ -130,7 +129,7 @@ async def scan_task():
     while True:
         if scan_active:
             print("--- Scanning ---")
-            task_measure = asyncio.create_task(measure_average(1,"Scan"))
+            asyncio.create_task(measure_average(1,"Scan"))
             devices = []
             async with aioble.scan(1000, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:

@@ -22,7 +22,7 @@ micropython-steami-sample/
 └── scenario/   # Multi-board BLE scenarios (peripherals and relays)
 ```
 
-Each example is a folder containing a `main.py` script, plus the helper modules it imports (`pins.py`, etc.).
+Each example is a folder containing a `main.py` script and the helper modules it imports (`pins.py`, etc.). Some groups (`battery/`, `scenario/scenario_3/`) share a `pins.py` in their parent folder: copy it next to `main.py` (or mount the parent folder) before running the example.
 
 ---
 

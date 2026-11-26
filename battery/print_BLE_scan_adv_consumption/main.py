@@ -3,7 +3,7 @@ import uasyncio as asyncio
 import aioble
 import struct
 import urandom
-from time import ticks_ms, ticks_diff
+from time import ticks_ms
 from pins import *   # fg.current_average(), display
 
 # === Initialisation BLE ===

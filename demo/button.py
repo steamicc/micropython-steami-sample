@@ -1,6 +1,5 @@
 from pins import *
 
-button_menu = ["A", "B", "MENU"]
 
 def display_pressed(button):
     display.fill(0)
@@ -14,7 +13,7 @@ async def button_menu():
     display.show()
 
     print("--- BUTTON ---")
-    
+
     while True:
         joystick_move = await wait_for_button()
         if joystick_move == "A":

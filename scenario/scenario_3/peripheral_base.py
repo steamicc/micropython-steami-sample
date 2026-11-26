@@ -1,5 +1,7 @@
-import bluetooth, uasyncio as asyncio, aioble, struct, json
-from time import ticks_ms
+import bluetooth
+import uasyncio as asyncio
+import aioble
+import json
 from pins import *
 
 KEY = 0x5A
@@ -24,7 +26,8 @@ def extract_manufacturer_data(adv_bytes):
     i = 0
     while i < len(adv_bytes):
         length = adv_bytes[i]
-        if length == 0: break
+        if length == 0:
+            break
         type_ = adv_bytes[i + 1]
         if type_ == 0xFF:
             return adv_bytes[i + 2 : i + 1 + length]
@@ -42,9 +45,9 @@ async def ble_task(device_name, relay_name, led):
         adv = advertising_payload(name=device_name, manufacturer_data=man_data)
         try :
             await aioble.advertise(
-                interval_us=150_000, 
-                adv_data=adv, 
-                connectable=False, 
+                interval_us=150_000,
+                adv_data=adv,
+                connectable=False,
                 timeout_ms=500)
             print("Advertisement done.")
         except asyncio.TimeoutError:
@@ -54,13 +57,15 @@ async def ble_task(device_name, relay_name, led):
         async with aioble.scan(500, interval_us=30000, window_us=30000, active=True) as scanner:
             async for result in scanner:
                 name = result.name()
-                if not name or not name.startswith("STeaMi-R"): continue
+                if not name or not name.startswith("STeaMi-R"):
+                    continue
                 man = extract_manufacturer_data(result.adv_data)
-                if not man: continue
+                if not man:
+                    continue
                 try:
                     msg_json = xor_encrypt(man).decode()
                     msg = json.loads(msg_json)
-                except:
+                except Exception:
                     continue
                 if msg.get("dst") == device_name:
                     distance = msg.get("payload", 0)

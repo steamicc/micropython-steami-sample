@@ -1,5 +1,4 @@
 import asyncio
-import framebuf
 import random
 from math import sqrt
 from pins import *
@@ -88,7 +87,7 @@ async def game_screen():
             direction = LEFT
         elif B_BUTTON.value() == 0 and direction == LEFT:
             direction = DOWN
-        
+
 
         # Déplacement du serpent
         head_x, head_y = snake[0]

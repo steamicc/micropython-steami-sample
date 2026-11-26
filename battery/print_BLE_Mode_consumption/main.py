@@ -1,7 +1,11 @@
 from pins import *   # pour fg.current_average() et display si dispo
 
-import bluetooth, aioble, uasyncio as asyncio
-import machine, urandom, struct
+import bluetooth
+import aioble
+import uasyncio as asyncio
+import machine
+import urandom
+import struct
 
 # ==========================
 # CONFIGURATION
@@ -14,15 +18,15 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
     if action_before:
         action_before()
         sleep(1)  # stabilisation
-    
+
     for _ in range(n):
         val = fg.current_average()   # ton instrument de mesure
         values.append(val)
         sleep(0.5)
-    
+
     if action_after:
         action_after()
-    
+
     return sum(values) / len(values) if values else 0
 
 async def adv_fast():

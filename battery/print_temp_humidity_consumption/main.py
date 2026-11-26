@@ -14,15 +14,15 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
     if action_before:
         action_before()
         sleep(2)  # temps pour stabiliser
-    
+
     for _ in range(n):
         val = fg.current_average()
         values.append(val)
         sleep(0.5)  # délai entre mesures
-    
+
     if action_after:
         action_after()
-    
+
     return sum(values) / len(values) if values else 0
 
 # Fonction pour afficher texte centré sur l'écran

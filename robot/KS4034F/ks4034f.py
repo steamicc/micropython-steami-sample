@@ -5,7 +5,7 @@ Portage de la bibliothèque MakeCode originale
 
 from machine import I2C
 from pyb import Pin, Timer
-from time import sleep_us, sleep_ms, ticks_us, ticks_diff
+from time import sleep_us, ticks_us, ticks_diff
 
 
 class MotorPosition:
@@ -255,7 +255,7 @@ class KS4034F:
                             # Succès !
                             self.servo_timer = test_timer
                             self.servo_channel = test_channel
-                            print(f"OK!")
+                            print("OK!")
                             print(f"✓ Servo initialisé: Timer {timer_id}, Canal {channel_id}")
                             success = True
                             break
@@ -366,5 +366,5 @@ class KS4034F:
         if self.servo_timer is not None and self.servo_timer is not False:
             try:
                 self.servo_timer.deinit()
-            except:
+            except Exception:
                 pass

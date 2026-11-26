@@ -70,7 +70,7 @@ def decode_data(data, sensor_name):
 
 # Function to scan for BLE devices and receive their data tend to fill the memory in 10 min
 async def scan_loop():
-    print(f"---Starting Scan---")
+    print("---Starting Scan---")
     while True:
         async with aioble.scan(scan_duration, interval_us=scan_interval, window_us=scan_window, active=True) as scanner:
             async for result in scanner:
@@ -80,7 +80,7 @@ async def scan_loop():
                         if (len(result.adv_data) > 17):  # Check if received complete data
                             decode_data(result.adv_data, result.name())
                         else:
-                            print(f"==> Invalid data length")
+                            print("==> Invalid data length")
                     else:
                         print("==> no adv_data")
             asyncio.sleep(scan_pause)  # Pause between scans
@@ -92,14 +92,14 @@ async def display_loop():
 
     while True:
         display.fill(0)
-        
+
         if not collected_data:
             scanning_text = "Scanning ..."
             display.text(scanning_text, text_x_center_position(scanning_text), 60, 255)
             display.show()
             await asyncio.sleep(2)
             continue
-        
+
         # Display the device name and the index of captured devices
         captured_devices = len(collected_data)
         captured_devices_text = f"{device_index+1}/{captured_devices}"
@@ -162,10 +162,12 @@ async def button_pressed():
     while True:
         if A_BUTTON.value() == 0: # change device
             device_index += 1
-            if device_index >= captured_devices: device_index = 0
+            if device_index >= captured_devices:
+                device_index = 0
         elif B_BUTTON.value() == 0: # change measurement
             measurement_index += 1
-            if measurement_index >= len(measurement): measurement_index = 0
+            if measurement_index >= len(measurement):
+                measurement_index = 0
         await asyncio.sleep(0.1)
 
 # Main function to run the scan and display loops concurrently

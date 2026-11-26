@@ -1,5 +1,5 @@
-import pyb 
-from time import sleep 
+import pyb
+from time import sleep
 import ssd1327
 from machine import SPI, Pin
 
@@ -15,7 +15,7 @@ display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
 led_red = pyb.LED(1)
 led_green = pyb.LED(2)
 led_blue = pyb.LED(3)
-delay = 0.5 
+delay = 0.5
 
 # Fonctions pour faire clignoter une LED
 def blink_led(led, couleur):
@@ -46,7 +46,7 @@ def blink_two_leds(led1, led2, couleur1, couleur2):
 
 # Fonction pour faire clignoter toutes les LEDs
 def blink_all_leds():
-        
+
     display.fill(0)
     draw_text(display, "LED Allumée(s) :", 50)
     draw_text(display, "Toutes les LEDs", 70)

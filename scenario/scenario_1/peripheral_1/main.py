@@ -2,14 +2,13 @@ import bluetooth
 import uasyncio as asyncio
 import aioble
 import struct
-from time import ticks_ms, ticks_diff
-from pins import * 
+from pins import *
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
 ble.active(True)
 
-device_name = f"STeaMi-S"
+device_name = "STeaMi-S"
 print("Device name:", device_name)
 
 # === Paramètres du BLE ===

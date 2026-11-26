@@ -86,7 +86,7 @@ def display_anim():
         display.framebuf.line(int(p2x[7]), int(p2y[7]), int(p2x[4]), int(p2y[4]), 1)
         display.framebuf.line(int(p2x[3]), int(p2y[3]), int(p2x[7]), int(p2y[7]), 1)
         display.show()
-            
+
 def display_steami():
     display.fill(0)
 
@@ -157,6 +157,8 @@ async def screen_menu():
                 break
             show_screens(screen_index)
             sleep(0.3)
-            
-        if screen_index >= len(screens) : screen_index = 0
-        elif screen_index < 0 : screen_index = len(screens) - 1
+
+        if screen_index >= len(screens) :
+            screen_index = 0
+        elif screen_index < 0 :
+            screen_index = len(screens) - 1

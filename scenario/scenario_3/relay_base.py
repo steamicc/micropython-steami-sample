@@ -1,5 +1,7 @@
-import bluetooth, uasyncio as asyncio, aioble, struct, json
-from time import ticks_ms
+import bluetooth
+import uasyncio as asyncio
+import aioble
+import json
 from pins import *
 
 KEY = 0x5A  # Clé XOR simple
@@ -20,7 +22,8 @@ def extract_manufacturer_data(adv_bytes):
     i = 0
     while i < len(adv_bytes):
         length = adv_bytes[i]
-        if length == 0: break
+        if length == 0:
+            break
         type_ = adv_bytes[i + 1]
         if type_ == 0xFF:
             return adv_bytes[i + 2 : i + 1 + length]
@@ -29,23 +32,27 @@ def extract_manufacturer_data(adv_bytes):
 
 async def ble_task(device_name):
     seen_msgs = set()
-    ble = bluetooth.BLE(); ble.active(True)
+    ble = bluetooth.BLE()
+    ble.active(True)
     print(f"Relay {device_name} active")
 
     while True:
         async with aioble.scan(800, interval_us=30000, window_us=30000, active=True) as scanner:
             async for result in scanner:
                 name = result.name()
-                if not name or name == device_name or not name.startswith("STeaMi"): continue
+                if not name or name == device_name or not name.startswith("STeaMi"):
+                    continue
                 man = extract_manufacturer_data(result.adv_data)
-                if not man: continue
+                if not man:
+                    continue
                 try:
                     msg_json = xor_encrypt(man).decode()
                     msg = json.loads(msg_json)
                 except Exception:
                     continue
                 msg_id = (msg["src"], msg["dst"], msg["payload"])
-                if msg_id in seen_msgs: continue
+                if msg_id in seen_msgs:
+                    continue
                 seen_msgs.add(msg_id)
                 print(f"{device_name} relays: {msg}")
                 msg["hop"] += 1
@@ -53,7 +60,7 @@ async def ble_task(device_name):
                 adv = advertising_payload(name=device_name, manufacturer_data=man_data)
                 try:
                     await aioble.advertise(interval_us=150_000, adv_data=adv, connectable=False, timeout_ms=500)
-                except:
+                except Exception:
                     pass
         await asyncio.sleep_ms(200)
 

@@ -1,4 +1,3 @@
-from micropython import const
 import asyncio
 import aioble
 import bluetooth

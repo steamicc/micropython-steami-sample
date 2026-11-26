@@ -45,7 +45,7 @@ async def main_menu():
         elif btn == "MENU":
             await run_menu(menu_index)
             print("--- MAIN ---")
-        
+
         if menu_index >= len(menu):
             menu_index = 0
         elif menu_index < 0:

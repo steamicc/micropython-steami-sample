@@ -8,7 +8,7 @@ from pins import *
 ble = bluetooth.BLE()
 ble.active(True)
 
-device_name = f"STeaMi-A"
+device_name = "STeaMi-A"
 print("Device name:", device_name)
 
 SCAN_DURATION = 500

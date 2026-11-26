@@ -14,15 +14,15 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
     if action_before:
         action_before()
         sleep(2)  # temps pour stabiliser
-    
+
     for _ in range(n):
         val = fg.current_average()
         values.append(val)
         sleep(1)  # délai entre mesures
-    
+
     if action_after:
         action_after()
-    
+
     return sum(values) / len(values) if values else 0
 
 # Fonction pour afficher texte centré sur l'écran
@@ -49,10 +49,10 @@ while True:
     center_text(f"OFF: {curr_idle:.1f} mA", 60)
     center_text(f"ON : {curr_active:.1f} mA", 70)
     center_text(f"Diff: {curr_active - curr_idle:.1f} mA", 80)
-    center_text(f"Distance:", 100)
+    center_text("Distance:", 100)
     center_text(f"{dist} mm", 110)
     display.show()
-  
+
     sleep(5)  # délai avant la prochaine mesure
     display.fill(0) # effacer l'écran
     display.show() # mettre à jour l'écran

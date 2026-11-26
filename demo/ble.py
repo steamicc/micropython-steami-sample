@@ -24,7 +24,7 @@ async def run_ble(ble_index):
         print("BLE EMIT")
         await run_ble_adv()
         await asyncio.sleep(0.2)
-    elif ble_index == 2:    
+    elif ble_index == 2:
         return
 
 async def ble_menu():
@@ -43,8 +43,10 @@ async def ble_menu():
             if ble[ble_index] == "EXIT":
                 break
             await run_ble(ble_index)
-        if ble_index >= len(ble) : ble_index = 0
-        elif ble_index < 0 : ble_index = len(ble) - 1
+        if ble_index >= len(ble) :
+            ble_index = 0
+        elif ble_index < 0 :
+            ble_index = len(ble) - 1
         display_menu("BLE", ble, ble_index)
 
 async def ble_receive():
@@ -53,7 +55,7 @@ async def ble_receive():
     async with aioble.scan(1000, interval_us=30000, window_us=30000) as scanner:
         async for result in scanner:
             results.append(result)
-    
+
     print("END BLE SCAN")
     # Remove duplicate MAC addresses
     unique_results = []
@@ -65,10 +67,10 @@ async def ble_receive():
             unique_results.append(result)
     results = unique_results
     return results
-    
+
 async def display_receive(results):
     print("BLE SCAN RESULTS")
-    
+
     result_index = 0
     while True:
         print(f"{result_index+1}/{len(results)}: {results[result_index]}")
@@ -86,7 +88,7 @@ async def display_receive(results):
             display.text(f"{mac_address}", 15, 60, 255)
             display.text(f"RSSI : {results[result_index].rssi}", 20, 80, 255)
             display.text(f"Name : {results[result_index].name()}", 20, 100, 255)
-       
+
         display.show()
 
         btn = await wait_for_button()
@@ -96,8 +98,10 @@ async def display_receive(results):
             result_index += 1
         elif btn == "MENU":
             break
-        if result_index >= len(results) : result_index = 0
-        elif result_index < 0 : result_index = len(results) - 1
+        if result_index >= len(results) :
+            result_index = 0
+        elif result_index < 0 :
+            result_index = len(results) - 1
 
 def make_payload(name="STeaMi"):
     name_bytes = name.encode()

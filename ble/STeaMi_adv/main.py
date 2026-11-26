@@ -2,7 +2,7 @@ import bluetooth
 import uasyncio as asyncio
 import aioble
 import struct
-from time import ticks_ms, ticks_diff
+from time import ticks_ms
 from pins import *  # Assure-toi que DISTANCE et display sont bien définis ici
 
 # === Initialisation BLE ===

@@ -122,6 +122,8 @@ async def buzzer_menu():
                 break
             play_sound(sounds_index)
 
-        if sounds_index >= len(sounds) : sounds_index = 0
-        elif sounds_index < 0 : sounds_index = len(sounds) - 1
+        if sounds_index >= len(sounds) :
+            sounds_index = 0
+        elif sounds_index < 0 :
+            sounds_index = len(sounds) - 1
         display_menu("BUZZER", sounds, sounds_index)

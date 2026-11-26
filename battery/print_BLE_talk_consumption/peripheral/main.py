@@ -65,7 +65,7 @@ async def sensor_task():
 async def peripheral_task():
     global client_name
     while True:
-        task_measure = asyncio.create_task(measure_average(0.25,"Advertise"))
+        asyncio.create_task(measure_average(0.25,"Advertise"))
         async with await aioble.advertise(
             _ADV_INTERVAL_MS,
             name=device_name,
@@ -76,8 +76,8 @@ async def peripheral_task():
 
             # Wait for client to write its name
             try:
-                
-                task_measure = asyncio.create_task(measure_average(1,"Connexion"))
+
+                asyncio.create_task(measure_average(1,"Connexion"))
                 con,data = await device_name_char.written(timeout_ms=5000)
                 client_name = data.decode()
                 connected_devices.append(client_name)

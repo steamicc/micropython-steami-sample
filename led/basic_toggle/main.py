@@ -1,10 +1,10 @@
-import pyb 
-from time import sleep 
+import pyb
+from time import sleep
 
 led_red = pyb.LED(1)
 led_green = pyb.LED(2)
 led_blue = pyb.LED(3)
-delay = 0.5 
+delay = 0.5
 
 led_blue.on()
 sleep(delay)

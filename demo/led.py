@@ -10,10 +10,10 @@ def run_led(led_index):
         toggle(LED_RED)
     elif led_index == 1:
         toggle(LED_BLUE)
-    elif led_index == 2:    
+    elif led_index == 2:
         toggle(LED_GREEN)
     elif led_index == 3:
-        return 
+        return
 
 def toggle(pin):
     pin.value(not pin.value())
@@ -36,6 +36,8 @@ async def led_menu():
             if leds[led_index] == "EXIT":
                 break
             run_led(led_index)
-            
-        if led_index >= len(leds) : led_index = 0
-        elif led_index < 0 : led_index = len(leds) - 1
+
+        if led_index >= len(leds) :
+            led_index = 0
+        elif led_index < 0 :
+            led_index = len(leds) - 1

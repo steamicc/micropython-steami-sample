@@ -75,7 +75,7 @@ def run_buzzer_tests():
             sleep(2)
 
             # Effacer l'écran avant le test suivant
-            display.fill(0)            
+            display.fill(0)
             display.show()
             sleep(1)
 

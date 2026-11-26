@@ -43,7 +43,7 @@ while True:
     sleep(1)  # Pause avant mesures
 
     # Mesure témoin (LEDs éteintes)
-    curr_temoin = measure_average() 
+    curr_temoin = measure_average()
 
     # LED Rouge
     curr_red = measure_leds([LED_RED], ["Rouge"])

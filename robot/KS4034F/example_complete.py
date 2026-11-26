@@ -133,7 +133,6 @@ def demo_obstacle_avoidance(robot):
     print("\nDémonstration évitement d'obstacles (20 secondes)...")
     print("Le robot avance et évite les obstacles")
 
-    start_time = sleep(0)  # Utiliser un compteur simple
     iterations = 0
     max_iterations = 40  # Environ 20 secondes à 0.5s par itération
 

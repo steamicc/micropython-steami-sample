@@ -124,7 +124,7 @@ def auto_detect_servo_pin(pin_name):
             for channel_id in channels_to_test:
                 try:
                     print(f"Essai: Timer {timer_id} Canal {channel_id}...", end=" ")
-                    channel = timer.channel(channel_id, Timer.PWM, pin=pin)
+                    timer.channel(channel_id, Timer.PWM, pin=pin)
                     print("✓ SUCCÈS!")
 
                     # Test trouvé, nettoyer et retourner
@@ -154,7 +154,7 @@ def main():
     print("="*60)
     print("Test de Servo Moteur - Balayage (Sweep)")
     print("="*60)
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"  Pin: {DEFAULT_PIN}")
 
     # Méthode 1: Détection automatique

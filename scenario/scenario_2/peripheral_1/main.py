@@ -2,7 +2,6 @@ import bluetooth
 import uasyncio as asyncio
 import aioble
 import struct
-from time import ticks_ms, ticks_diff
 from pins import *  # Assure-toi que DISTANCE, display et fg sont définis ici
 
 ble = bluetooth.BLE()
@@ -60,7 +59,7 @@ async def energy_task():
     while True:
         try:
             energy_current = fg.current_average()
-        except:
+        except Exception:
             energy_current = 0
         await asyncio.sleep(1)
 
