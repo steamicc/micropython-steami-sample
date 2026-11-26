@@ -11,16 +11,22 @@ Roles (single file):
 
 Path loss model (per beacon):
     d = 10 ^ ((RSSI_ref - RSSI) / (10 * n))
-    RSSI_ref: measured at 1m with nRF Connect (iPhone 17 Pro Max)
-    n: computed from 1m and 2m measurements per beacon
+    RSSI_ref: RSSI measured at 1 m
+    n: path loss exponent, computed from the RSSI at 1 m and 2 m:
+       n = (RSSI_ref - RSSI_2m) / (10 * log10(2))
 
-Calibration data:
+Calibration:
+    Measure with the mobile board itself (it prints the averaged RSSI of
+    each beacon on the serial console): another receiver, such as a
+    phone, does not report the same RSSI. The values below come from
+    the room where the example was written and must be measured again:
+
     Beacon   RSSI@1m   RSSI@2m   n
     M1       -75       -87       3.99
     M2       -75       -88       4.32
     M3       -80       -88       2.66
 
-Beacon coordinates (cm, measured on site):
+Beacon coordinates (cm, measured on site, to adapt to your room):
     M1 = (  0,   0)
     M2 = (420,   0)
     M3 = (330, 278)
@@ -31,10 +37,9 @@ Hardware:
     - D-PAD for menu navigation
 """
 
-import bluetooth
 import math
 import uasyncio as asyncio
-from time import sleep_ms
+from time import sleep_ms, ticks_diff, ticks_ms
 
 import aioble
 import ssd1327
@@ -52,14 +57,6 @@ from mcp23009e.const import (
 )
 from steami_screen import DARK, GRAY, LIGHT, Screen, SSD1327Display, WHITE
 
-# === BLE setup ===
-ble = bluetooth.BLE()
-ble.active(True)
-
-mac_bytes = ble.config("mac")[1]
-mac_suffix = "".join(f"{b:02X}" for b in mac_bytes[-2:])
-DEVICE_NAME = f"STeaMi-{mac_suffix}"
-
 # === Beacon names ===
 BEACON_NAMES = ["Beacon_M1", "Beacon_M2", "Beacon_M3"]
 
@@ -72,9 +69,12 @@ BEACON_POS = {
 
 # === Geometric centroid of the triangle (cm) ===
 CENTROID = (
-    (0 + 420 + 330) // 3,
-    (0 + 0 + 278) // 3,
+    sum(x for x, _ in BEACON_POS.values()) // len(BEACON_POS),
+    sum(y for _, y in BEACON_POS.values()) // len(BEACON_POS),
 )
+
+# A beacon not heard for this long is ignored.
+RSSI_MAX_AGE_MS = 3000
 
 # === Path loss calibration (measured on site) ===
 # RSSI_ref: RSSI at 1 meter
@@ -167,6 +167,22 @@ def wait_released(btn):
         sleep_ms(20)
 
 
+async def wait_released_async(btn):
+    """Wait until button is released, letting the other tasks run."""
+    while is_pressed(btn):
+        await asyncio.sleep_ms(20)
+
+
+def fresh_rssi():
+    """Return {beacon_name: rssi} for the beacons heard recently."""
+    now = ticks_ms()
+    return {
+        name: rssi
+        for name, (rssi, seen_at) in current_rssi.items()
+        if ticks_diff(now, seen_at) < RSSI_MAX_AGE_MS
+    }
+
+
 def menu_select(title, items):
     """Generic D-PAD menu. Returns selected index."""
     selected = 0
@@ -255,22 +271,30 @@ def trilaterate(distances):
 
 
 def apply_filter(new_pos):
-    """Apply exponential smoothing with minimum movement threshold."""
+    """Smooth the position, then ignore moves smaller than MIN_MOVE_CM.
+
+    The exponential moving average (filtered_pos) is updated with every
+    new position. The dead band only applies to the displayed position
+    (estimated_pos): a slow but steady move adds up until it exceeds
+    MIN_MOVE_CM, then the dot follows.
+    """
     global filtered_pos
 
     if filtered_pos is None:
         filtered_pos = new_pos
         return filtered_pos
 
-    fx = ALPHA * new_pos[0] + (1 - ALPHA) * filtered_pos[0]
-    fy = ALPHA * new_pos[1] + (1 - ALPHA) * filtered_pos[1]
+    filtered_pos = (
+        ALPHA * new_pos[0] + (1 - ALPHA) * filtered_pos[0],
+        ALPHA * new_pos[1] + (1 - ALPHA) * filtered_pos[1],
+    )
 
-    dx = fx - filtered_pos[0]
-    dy = fy - filtered_pos[1]
-    if math.sqrt(dx * dx + dy * dy) < MIN_MOVE_CM:
-        return filtered_pos
+    if estimated_pos is not None:
+        dx = filtered_pos[0] - estimated_pos[0]
+        dy = filtered_pos[1] - estimated_pos[1]
+        if math.sqrt(dx * dx + dy * dy) < MIN_MOVE_CM:
+            return estimated_pos
 
-    filtered_pos = (fx, fy)
     return filtered_pos
 
 
@@ -319,7 +343,7 @@ async def beacon_button_task():
     global stop_flag
     while not stop_flag:
         if is_pressed(MCP23009_BTN_LEFT):
-            wait_released(MCP23009_BTN_LEFT)
+            await wait_released_async(MCP23009_BTN_LEFT)
             stop_flag = True
             return
         await asyncio.sleep_ms(100)
@@ -352,26 +376,33 @@ async def mobile_ble_task():
             async for result in scanner:
                 name = result.name()
                 if name in BEACON_NAMES:
-                    current_rssi[name] = smooth_rssi(name, result.rssi)
+                    current_rssi[name] = (smooth_rssi(name, result.rssi), ticks_ms())
 
 
 async def mobile_display_task():
     """Compute trilateration, filter position and display live map."""
     global estimated_pos, stop_flag
 
-    d = screen._d
+    loop_count = 0
 
     while not stop_flag:
         if is_pressed(MCP23009_BTN_LEFT):
-            wait_released(MCP23009_BTN_LEFT)
+            await wait_released_async(MCP23009_BTN_LEFT)
             stop_flag = True
             break
 
+        # Averaged RSSI of the beacons heard recently. Printed every second
+        # on the serial console, to measure RSSI_REF and PATH_LOSS_N.
+        rssi = fresh_rssi()
+        loop_count += 1
+        if loop_count % 5 == 0:
+            print("RSSI:", rssi)
+
         # Compute distances from smoothed RSSI
         distances = {
-            name: rssi_to_distance(current_rssi[name], name)
+            name: rssi_to_distance(rssi[name], name)
             for name in BEACON_NAMES
-            if name in current_rssi
+            if name in rssi
         }
 
         # Trilaterate and filter
@@ -382,23 +413,23 @@ async def mobile_display_task():
 
         # Draw map
         screen.clear()
-        screen._rect(MAP_X, MAP_Y, MAP_W, MAP_H, DARK)
+        screen.rect(MAP_X, MAP_Y, MAP_W, MAP_H, DARK)
 
         # Draw beacon markers with labels
         for name, (cx, cy) in BEACON_POS.items():
             px, py = world_to_screen(cx, cy)
-            screen._fill_rect(px - 3, py - 3, 6, 6, LIGHT)
+            screen.rect(px - 3, py - 3, 6, 6, LIGHT, fill=True)
             short = name[-2:]
             lx = px - 8
             ly = py - 14 if py > MAP_Y + 20 else py + 8
-            d.text(short, lx, ly, GRAY)
+            display.text(short, lx, ly, GRAY)
 
         # Draw filtered position
         if estimated_pos:
             ex = max(0, min(SPACE_W, estimated_pos[0]))
             ey = max(0, min(SPACE_H, estimated_pos[1]))
             px, py = world_to_screen(ex, ey)
-            screen._fill_circle(px, py, 3, WHITE)
+            screen.circle(px, py, 3, WHITE, fill=True)
 
         # Distances in subtitle
         if distances:
