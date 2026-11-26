@@ -1,4 +1,26 @@
-### 🛠 BLE Timeout Issue on STeaMi
+# BLE examples
+
+## BLE localization path
+
+These examples build on each other, from a single beacon to indoor positioning. They all use `aioble` and `steami_screen`, both frozen in the STeaMi firmware. The beacons of the last four examples share the `Beacon_M1`/`Beacon_M2`/`Beacon_M3` names, so a board left in beacon mode works with all of them.
+
+| Example | Boards | What it teaches |
+| --- | --- | --- |
+| [`beacon/`](beacon/) | 1 + phone | Advertising payload: name and sensor data |
+| [`rssi_proximity/`](rssi_proximity/) | 2 | RSSI as a proxy for distance, averaging |
+| [`hot_cold/`](hot_cold/) | 2 | Smoothing, hysteresis, sound feedback |
+| [`room_mapper/`](room_mapper/) | 3–4 | Data collection, RSSI variability, CSV on the DAPLink flash |
+| [`trilateration/`](trilateration/) | 4 | Path loss model, trilateration, position filtering |
+
+## Other examples
+
+- [`STeaMi_adv/`](STeaMi_adv/) — share distance readings between boards through BLE advertising
+- [`STeaMi_talk/`](STeaMi_talk/) — central and peripheral exchanging data over a BLE connection
+- [`Thermometer_Scanner/`](Thermometer_Scanner/) — collect temperature and humidity from nearby BLE sensors
+
+## Troubleshooting
+
+### BLE timeout on STeaMi
 
 If you encounter a **timeout or failure** when calling:
 
