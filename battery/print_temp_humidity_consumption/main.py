@@ -25,11 +25,6 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
 
     return sum(values) / len(values) if values else 0
 
-# Fonction pour afficher texte centré sur l'écran
-def center_text(text, y):
-    x = (128 - len(text)*8) // 2
-    display.text(text, x, y)
-
 # Fonctions d'accès capteur
 def read_temp():
     return TEMPERATURE.read()
@@ -70,18 +65,20 @@ while True:
     print(f"Temp: {temp:.1f}C, Hum: {hum:.1f}%, consommation BOTH: {curr_both:.2f} mA")
 
     # Affichage OLED
-    display.fill(0)
-    center_text("Consommation", 10)
-    center_text(f"OFF : {curr_idle:.1f} mA", 30)
-    center_text(f"TEMP: {curr_temp:.1f} mA", 45)
-    center_text(f"HUM : {curr_hum:.1f} mA", 60)
-    center_text(f"BOTH: {curr_both:.1f} mA", 75)
-    center_text(f"T:{temp:.1f}C", 95)
-    center_text(f"H:{hum:.1f}%", 110)
-    display.show()
+    SCREEN.clear()
+    show_lines([
+        "Consommation",
+        f"OFF : {curr_idle:.1f} mA",
+        f"TEMP: {curr_temp:.1f} mA",
+        f"HUM : {curr_hum:.1f} mA",
+        f"BOTH: {curr_both:.1f} mA",
+        f"T:{temp:.1f}C",
+        f"H:{hum:.1f}%",
+    ])
+    SCREEN.show()
 
     # Pause avant nouvelle boucle
     sleep(5)
-    display.fill(0)
-    display.show()
+    SCREEN.clear()
+    SCREEN.show()
     sleep(1)

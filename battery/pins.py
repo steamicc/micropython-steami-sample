@@ -1,12 +1,16 @@
 import asyncio
 from time import sleep
 import time
+import math
 import pyb
 
-import ssd1327
+from machine import Pin
+from steami import Battery, Distance, Humidity, Screen, Temperature
 
-from machine import SPI, Pin
-from steami import Battery, Distance, Humidity, Temperature
+# The screen (SSD1327 on V1a/V1b, GC9A01 on V1c). begin() allocates the
+# image memory, so it comes first, before the other objects use the RAM.
+SCREEN = Screen()
+SCREEN.begin()
 
 LED_RED = pyb.LED(1)
 LED_GREEN = pyb.LED(2)
@@ -26,9 +30,25 @@ HUMIDITY = Humidity()  # HUMIDITY.read(): relative humidity in %
 BATTERY = Battery()  # BATTERY.current(): average current in mA
 
 
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
+def show_lines(lines, pitch=10):
+    """Draw text lines centered, stacked in the middle of the screen.
 
-display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
+    pitch: distance between two rows, in 128 px units. The text is scaled
+    by SCREEN.k; on the round 240 px screen a line too wide for its row is
+    shrunk until it fits inside the circle.
+    """
+    k = SCREEN.k
+    step = SCREEN.u(pitch)
+    cy = SCREEN.center[1]
+    y = (SCREEN.height - ((len(lines) - 1) * step + 8 * k)) // 2
+    for text in lines:
+        f = k
+        while f > 1:
+            dy = max(abs(y - cy), abs(y + 8 * f - cy))
+            half = math.sqrt(max(0, SCREEN.radius ** 2 - dy ** 2))
+            if len(text) * 8 * f <= 2 * half:
+                break
+            f -= 1
+        x = (SCREEN.width - len(text) * 8 * f) // 2
+        SCREEN.text(text, (x, y + 4 * (k - f)), scale=f)
+        y += step

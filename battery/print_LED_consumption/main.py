@@ -3,11 +3,6 @@ from pins import *   # Pour accéder à BATTERY.current()
 # --- Paramètres ---
 N_MEASURES = 10
 
-# --- Affichage texte centré ---
-def draw_text(display, text, y_start, screen_width=128, char_width=8):
-    x = (screen_width - len(text) * char_width) // 2
-    display.text(text, x, y_start)
-
 # --- Fonction de mesure ---
 def measure_average(n=N_MEASURES, action_before=None, action_after=None):
     values = []
@@ -37,8 +32,8 @@ def measure_leds(leds, names):
 
 # --- Boucle principale ---
 while True:
-    display.fill(0) # Effacer l'écran
-    display.show() # Mettre à jour l'écran
+    SCREEN.clear() # Effacer l'écran
+    SCREEN.show() # Mettre à jour l'écran
 
     sleep(1)  # Pause avant mesures
 
@@ -61,16 +56,18 @@ while True:
     curr_all = measure_leds([LED_RED, LED_GREEN, LED_BLUE], ["Rouge","Vert","Bleu"])
 
     # Affichage résultats
-    display.fill(0)
-    draw_text(display, f"T : {curr_temoin:.1f} mA", 10)
-    draw_text(display, f"R : {curr_red:.1f} mA", 30)
-    draw_text(display, f"V : {curr_green:.1f} mA", 40)
-    draw_text(display, f"B : {curr_blue:.1f} mA", 50)
-    draw_text(display, f"R+V : {curr_rg:.1f} mA", 60)
-    draw_text(display, f"R+B : {curr_rb:.1f} mA", 70)
-    draw_text(display, f"V+B : {curr_gb:.1f} mA", 80)
-    draw_text(display, f"All : {curr_all:.1f} mA", 90)
-    display.show()
+    SCREEN.clear()
+    show_lines([
+        f"T : {curr_temoin:.1f} mA",
+        f"R : {curr_red:.1f} mA",
+        f"V : {curr_green:.1f} mA",
+        f"B : {curr_blue:.1f} mA",
+        f"R+V : {curr_rg:.1f} mA",
+        f"R+B : {curr_rb:.1f} mA",
+        f"V+B : {curr_gb:.1f} mA",
+        f"All : {curr_all:.1f} mA",
+    ])
+    SCREEN.show()
 
     print("========== Resultats ==========")
     print(f"Temoin : {curr_temoin:.2f} mA")

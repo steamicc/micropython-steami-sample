@@ -1,15 +1,11 @@
 from pins import *
 from time import sleep
+from steami_screen import WHITE
 
 def show_text():
-        display.fill(0)
-        centerText("Consommation:", 60)
-        display.show()
-
-def centerText(text, y):
-    length = len(text)
-    position = (128 - (length * 8)) // 2
-    display.text(text, position, y)
+        SCREEN.clear()
+        SCREEN.text("Consommation:", "CENTER")
+        SCREEN.show()
 
 def measure_average(n, action_before=None, action_after=None):
     """
@@ -36,12 +32,12 @@ def measure_average(n, action_before=None, action_after=None):
 N_MEASURES = 10
 
 while True:
-    display.fill(0)
-    display.show()
+    SCREEN.clear()
+    SCREEN.show()
     print("=== Mesure de consommation d'energie ===")
 
     # 1. Mesure écran éteint (rétroéclairage actif mais aucun pixel allumé)
-    avg_off = measure_average(N_MEASURES, action_before=lambda: (display.fill(0), display.show()))
+    avg_off = measure_average(N_MEASURES, action_before=lambda: (SCREEN.clear(), SCREEN.show()))
     print("1. Moyenne consommation ecran vide : {:.2f} mA".format(avg_off))
 
     # 2. Mesure écran avec texte affiché
@@ -49,17 +45,19 @@ while True:
     print("2. Moyenne consommation ecran avec texte : {:.2f} mA".format(avg_text))
 
     # 3. Mesure écran plein (tous pixels allumés)
-    avg_full = measure_average(N_MEASURES, action_before=lambda: (display.fill(1), display.show()))
+    avg_full = measure_average(N_MEASURES, action_before=lambda: (SCREEN.clear(WHITE), SCREEN.show()))
     print("3. Moyenne consommation plein ecran : {:.2f} mA".format(avg_full))
 
     # Affichage des résultats sur l'écran
-    display.fill(0)
-    centerText("Moyennes:", 20)
-    centerText("pour {} mesures".format(N_MEASURES), 30)
-    centerText("Off : {:.1f} mA".format(avg_off), 50)
-    centerText("Texte : {:.1f} mA".format(avg_text), 70)
-    centerText("Full : {:.1f} mA".format(avg_full), 90)
-    display.show()
+    SCREEN.clear()
+    show_lines([
+        "Moyennes:",
+        "pour {} mesures".format(N_MEASURES),
+        "Off : {:.1f} mA".format(avg_off),
+        "Texte : {:.1f} mA".format(avg_text),
+        "Full : {:.1f} mA".format(avg_full),
+    ], pitch=14)
+    SCREEN.show()
 
     print("========================================")
     sleep(15)  # pause avant nouvelle série de mesures

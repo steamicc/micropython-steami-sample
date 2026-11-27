@@ -1,10 +1,9 @@
+from pins import *  # begin() de l'écran avant les imports BLE : il alloue 40 Ko
 import asyncio
 import aioble
 import bluetooth
 import struct
 import time
-
-from pins import *
 
 # UUIDs
 _ENV_SENSE_UUID = bluetooth.UUID(0x181A)
@@ -42,10 +41,10 @@ async def display_task():
     global selected_index, discovered_devices
     while True:
         if scan_active:
-            display.fill(0)
-            display.text(device_name, text_x_center_position(device_name), 25, 255)
+            SCREEN.clear()
+            SCREEN.title(device_name)
             display_menu(discovered_devices, selected_index)
-            display.show()
+            SCREEN.show()
         await asyncio.sleep(0.1)
 
 # Boutons
@@ -109,10 +108,10 @@ async def connect_to_device(device, name):
                 distance_mm = struct.unpack("<h", raw)[0]
                 print("Distance:", distance_mm)
 
-                display.fill(0)
-                display.text(name, text_x_center_position(name), 25, 255)
-                display.text(f"{distance_mm} mm", text_x_center_position(f"{distance_mm} mm"), 60, 255)
-                display.show()
+                SCREEN.clear()
+                SCREEN.title(name)
+                SCREEN.text(f"{distance_mm} mm", "CENTER")
+                SCREEN.show()
             except Exception as e:
                 print("Read error:", e)
                 break
