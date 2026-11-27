@@ -3,6 +3,11 @@ name = "micropython-steami-sample"
 version = "0.1.0"
 description = "MicroPython sample scripts for the STeaMi board."
 
+[dependency-groups]
+# Lint tooling, installed with `pip install --group dev`.
+# Keep the ruff pin in sync with .github/workflows/lint.yml.
+dev = ["ruff==0.17.6"]
+
 [tool.ruff]
 line-length = 99
 target-version = "py310"
