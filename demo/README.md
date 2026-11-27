@@ -27,7 +27,7 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
 
 * A/B buttons: Scroll up/down through options
 * MENU button: Select or exit a module
-* Display: OLED 128x128 using `ssd1327` via SPI
+* Display: `steami.Screen` (OLED 128x128 SSD1327 on V1a/V1b, round 240x240 GC9A01 on V1c)
 
 ### 📡 BLE Module
 
@@ -78,7 +78,7 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
   * SPI and I2C buses
 * Components:
 
-  * OLED 128x128 SPI (SSD1327)
+  * Screen: OLED 128x128 SPI (SSD1327, V1a/V1b) or round 240x240 TFT (GC9A01, V1c)
   * VL53L1X (distance)
   * WSEN-HIDS (V1a/V1b) or BME280 (V1c): humidity/temperature
   * APDS-9960 (light, V1a/V1b only)
@@ -100,5 +100,5 @@ This project is a menu-driven embedded system built for the STeaMi. It's designe
 
 ## ⚠ Known Limitations
 
-* On a V1c, the screen stays black (no GC9A01 support in MicroPython yet, see micropython-steami-lib#368), and the light and gesture sensors are missing: the demo still runs and prints its menu on the serial console.
+* On a V1c, the light and gesture sensors are missing: SENSORS shows `Lum: 0` and GESTURE shows "No sensor".
 * BLE scan and advertising work asynchronously but might be affected by timing or radio interference.

@@ -15,9 +15,9 @@ ble = ["RECEIVE", "EMIT", "EXIT"]
 async def run_ble(ble_index):
     if ble_index == 0:
         print("BLE RECEIVE")
-        display.fill(0)
-        display.text("BLE SCAN ... ", 25, 70, 255)
-        display.show()
+        SCREEN.clear()
+        SCREEN.text("BLE SCAN ... ", "CENTER", WHITE)
+        SCREEN.show()
         results = await ble_receive()
         await display_receive(results)
     elif ble_index == 1:
@@ -75,21 +75,21 @@ async def display_receive(results):
     while True:
         print(f"{result_index+1}/{len(results)}: {results[result_index]}")
 
-        display.fill(0)
-        display.text("RESULTS", 35, 20, 255)
+        SCREEN.clear()
+        SCREEN.title("RESULTS", WHITE)
         if not results:
             print("Aucun résultat à afficher.")
-            display.text("No results to show", 20, 50, 255)
+            display_line("No results to show", 50)
             return
         else :
-            display.text(f"{result_index+1}/{len(results)}", 50, 30, 255)
+            display_line(f"{result_index+1}/{len(results)}", 32)
             mac_address = ''.join(['%02x' % b for b in results[result_index].device.addr]).upper()
-            display.text("MAC address:", 20, 50, 255)
-            display.text(f"{mac_address}", 15, 60, 255)
-            display.text(f"RSSI : {results[result_index].rssi}", 20, 80, 255)
-            display.text(f"Name : {results[result_index].name()}", 20, 100, 255)
+            display_line("MAC address:", 44)
+            display_line(f"{mac_address}", 54)
+            display_line(f"RSSI : {results[result_index].rssi}", 70)
+            display_line(f"Name : {results[result_index].name()}", 82)
 
-        display.show()
+        SCREEN.show()
 
         btn = await wait_for_button()
         if btn == "A":
