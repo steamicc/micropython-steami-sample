@@ -11,14 +11,16 @@ def display_sensor():
     ]
     # One block, left-aligned and centred on the widest line and on the
     # screen centre, so that it stays inside the round screen of the V1c.
-    k = SCREEN.k
-    step = SCREEN.u(10)
-    x = (SCREEN.width - max(len(line) for line in lines) * 8 * k) // 2
-    y = SCREEN.center[1] - (3 * step + 8 * k) // 2
+    # Cells of 8 px wide, SCREEN.text_height() px high (8 on 128 px, 16 on
+    # 240 px); a line every cell height + 2k px (10 on 128 px, 20 on 240 px).
+    h = SCREEN.text_height()
+    step = h + 2 * SCREEN.k
+    x = (SCREEN.width - max(len(line) for line in lines) * 8) // 2
+    y = SCREEN.center[1] - (3 * step + h) // 2
     SCREEN.clear()
     SCREEN.title("SENSORS", WHITE)
     for i, line in enumerate(lines):
-        SCREEN.text(line, (x, y + i * step), WHITE, k)
+        SCREEN.text(line, (x, y + i * step), WHITE)
     SCREEN.show()
 
 async def sensor_menu():

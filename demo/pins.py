@@ -51,16 +51,14 @@ def display_menu(name, list, index):
 def display_line(text, y, color=WHITE):
     """Draw text centred on row y (in 128 px units), cut to fit the screen.
 
-    On the round 240 px screen of the V1c, the line keeps the characters
-    that fit the circle at that row.
+    A cell is 8 px wide on both screens, SCREEN.text_height() px high (8x8
+    font on 128 px, Spleen 8x16 on 240 px). On the round screen, the line
+    keeps the characters that fit the circle at that row.
     """
-    k = SCREEN.k
     y = SCREEN.u(y)
-    room = SCREEN.width
-    if k > 1:
-        r = SCREEN.radius
-        cy = SCREEN.center[1]
-        d = max(abs(y - cy), abs(y + 8 * k - 1 - cy))
-        room = 2 * int(math.sqrt(max(0, r * r - d * d))) - 2 * k
-    text = text[: max(0, room) // (8 * k)]
-    SCREEN.text(text, ((SCREEN.width - len(text) * 8 * k) // 2, y), color, k)
+    r = SCREEN.radius
+    cy = SCREEN.center[1]
+    d = max(abs(y - cy), abs(y + SCREEN.text_height() - 1 - cy))
+    room = 2 * int(math.sqrt(max(0, r * r - d * d))) - 2 * SCREEN.k
+    text = text[: max(0, room) // 8]
+    SCREEN.text(text, ((SCREEN.width - len(text) * 8) // 2, y), color)
