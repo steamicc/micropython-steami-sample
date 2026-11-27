@@ -39,7 +39,7 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
+    return max((SCREEN.width - len(text) * 8) // 2, 0)
 
 async def ble_task():
     global forwarded_presence
@@ -91,11 +91,13 @@ async def display_task():
         SCREEN.clear()
         SCREEN.text(device_name, "N")
         recent_devices = sorted(devices_distances.items(), key=lambda x: x[1][1], reverse=True)[:4]
-        y = 40
+        # One text cell height plus a margin between two lines
+        y = SCREEN.u(40)
+        step = SCREEN.text_height() + SCREEN.u(2)
         for name, (dist, _) in recent_devices:
-            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center("XXXX: XXX"), SCREEN.u(y)), scale=SCREEN.k)
-            y += 10
-        SCREEN.text(f"I: {energy_current:.1f} mA", (text_x_center("I: XXXXX"), SCREEN.u(y+5)), scale=SCREEN.k)
+            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center("XXXX: XXX"), y))
+            y += step
+        SCREEN.text(f"I: {energy_current:.1f} mA", (text_x_center("I: XX.X mA"), y + SCREEN.u(5)))
         SCREEN.show()
         await asyncio.sleep(0.3)
 

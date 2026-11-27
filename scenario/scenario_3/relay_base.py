@@ -52,9 +52,10 @@ async def display_task(name):
     while True:
         SCREEN.clear()
         SCREEN.text(name, "N")
-        # 15 characters do not fit the round screen at scale SCREEN.k: scale 1
+        # 15 characters: on the middle row, where the circle is widest
         label = "Relay mesh node"
-        SCREEN.text(label, ((SCREEN.width - len(label) * 8) // 2, SCREEN.u(35)), scale=1)
+        y = (SCREEN.height - SCREEN.text_height()) // 2
+        SCREEN.text(label, ((SCREEN.width - len(label) * 8) // 2, y))
         SCREEN.show()
         await asyncio.sleep(0.5)
 

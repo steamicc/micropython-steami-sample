@@ -43,5 +43,5 @@ def display_menu(list, index):
     SCREEN.menu(list, index)
 
 def text_x_center_position(text):
-    x_position = (SCREEN.width - (len(text) * 8 * SCREEN.k)) // 2 # Center the text
+    x_position = (SCREEN.width - len(text) * 8) // 2 # Center the text
     return x_position
