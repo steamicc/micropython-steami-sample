@@ -62,20 +62,21 @@ def draw_cursor(col):
             SCREEN.rect(px, py_bottom, 1, STROKE, WHITE, fill=True)
 
 def draw_numbers():
-    # Chiffres de 8 x SCREEN.k pixels, centrés sur leur case
-    digit = 8 * SCREEN.k
-    # Colonnes (numéros en haut)
+    # Chiffres de 8 pixels de large et SCREEN.text_height() de haut (8x8 sur
+    # 128 px, Spleen 8x16 sur 240 px), centrés sur leur case
+    digit_h = SCREEN.text_height()
+    # Colonnes (numéros en haut, à STROKE pixels au-dessus du trait du curseur)
+    py = OFFSET_Y - SCREEN.u(2) - 2 * STROKE + 1 - digit_h
     for col in range(GRID_COLS):
         num = str(col+1)
-        px = OFFSET_X + col * CELL_SIZE + (CELL_SIZE - digit) // 2
-        py = OFFSET_Y - SCREEN.u(10) - STROKE + 1  # au-dessus du curseur
-        SCREEN.text(num, (px, py), WHITE, scale=SCREEN.k)
-    # Lignes (numéros à gauche)
+        px = OFFSET_X + col * CELL_SIZE + (CELL_SIZE - 8) // 2
+        SCREEN.text(num, (px, py), WHITE)
+    # Lignes (numéros à gauche, à 2 x STROKE pixels du plateau)
+    px = OFFSET_X - 8 - 2 * STROKE
     for row in range(GRID_ROWS):
         num = str(row+1)
-        px = OFFSET_X - SCREEN.u(10)
-        py = OFFSET_Y + row * CELL_SIZE + (CELL_SIZE - digit) // 2
-        SCREEN.text(num, (px, py), WHITE, scale=SCREEN.k)
+        py = OFFSET_Y + row * CELL_SIZE + (CELL_SIZE - digit_h) // 2
+        SCREEN.text(num, (px, py), WHITE)
 
 def check_winner(board):
     for y in range(GRID_ROWS):
