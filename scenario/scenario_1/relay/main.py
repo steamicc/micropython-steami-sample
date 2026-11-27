@@ -40,7 +40,7 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((128 - len(text) * 8) // 2, 0)
+    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
 
 async def ble_task():
     global forwarded_distance
@@ -95,8 +95,8 @@ async def energy_task():
 
 async def display_task():
     while True:
-        display.fill(0)
-        display.text(device_name, text_x_center(device_name), 10, 255)
+        SCREEN.clear()
+        SCREEN.text(device_name, "N")
 
         recent_devices = sorted(
             devices_distances.items(),
@@ -106,11 +106,11 @@ async def display_task():
 
         y = 30
         for name, (dist, _) in recent_devices:
-            display.text(f"{name[-4:]}: {dist}", text_x_center("XXXX: XXX"), y, 255)
+            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center("XXXX: XXX"), SCREEN.u(y)), scale=SCREEN.k)
             y += 10
 
-        display.text(f"I: {energy_current:.1f} mA", text_x_center("I: XXXXX"), y + 5, 255)
-        display.show()
+        SCREEN.text(f"I: {energy_current:.1f} mA", (text_x_center("I: XXXXX"), SCREEN.u(y + 5)), scale=SCREEN.k)
+        SCREEN.show()
         await asyncio.sleep(0.5)
 
 async def main():
