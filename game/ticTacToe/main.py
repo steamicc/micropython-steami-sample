@@ -1,14 +1,15 @@
 import asyncio
 from pins import *
-from math import sqrt, sin, cos, pi
+from math import sqrt
+from steami_screen import BLACK, LIGHT, RED, WHITE, YELLOW
 
 # --- Constantes ---
 GRID_COLS = 7
 GRID_ROWS = 6
-CELL_SIZE = 12  # pixels par case
-CENTER_X = 64
-CENTER_Y = 64
-RADIUS = 64
+CELL_SIZE = SCREEN.u(12)  # pixels par case (12 sur 128 px, 22 sur 240 px)
+CENTER_X, CENTER_Y = SCREEN.center
+RADIUS = SCREEN.radius
+STROKE = SCREEN.k  # épaisseur des traits : 1 sur 128 px, 2 sur 240 px
 PLAYER_CROSS = 1
 PLAYER_CIRCLE = 2
 
@@ -26,51 +27,55 @@ def in_circle(px, py):
     return sqrt((px - CENTER_X)**2 + (py - CENTER_Y)**2) <= RADIUS
 
 # Coordonnées du plateau centré
-OFFSET_X = (128 - GRID_COLS * CELL_SIZE) // 2
-OFFSET_Y = (128 - GRID_ROWS * CELL_SIZE) // 2
+OFFSET_X = (SCREEN.width - GRID_COLS * CELL_SIZE) // 2
+OFFSET_Y = (SCREEN.height - GRID_ROWS * CELL_SIZE) // 2
 
 def draw_cell(x, y, player):
     px = OFFSET_X + x * CELL_SIZE
     py = OFFSET_Y + y * CELL_SIZE
     if not in_circle(px + CELL_SIZE//2, py + CELL_SIZE//2):
         return
+    end = CELL_SIZE - 1
     if player == PLAYER_CROSS:
-        display.framebuf.line(px, py, px + CELL_SIZE - 1, py + CELL_SIZE - 1, 255)
-        display.framebuf.line(px, py + CELL_SIZE - 1, px + CELL_SIZE - 1, py, 255)
+        # STROKE diagonales parallèles, dans la case
+        for d in range(STROKE):
+            SCREEN.line(px + d, py, px + end, py + end - d, RED)
+            SCREEN.line(px + d, py + end, px + end, py + d, RED)
     elif player == PLAYER_CIRCLE:
+        # anneau de STROKE pixels : disque plein, puis son intérieur effacé
         r = CELL_SIZE // 2 - 1
         cx = px + CELL_SIZE//2
         cy = py + CELL_SIZE//2
-        for angle in range(0, 360, 5):
-            rad = angle * pi / 180
-            x1 = int(cx + r * cos(rad))
-            y1 = int(cy + r * sin(rad))
-            if in_circle(x1, y1):
-                display.pixel(x1, y1, 255)
+        SCREEN.circle(cx, cy, r, YELLOW, fill=True)
+        SCREEN.circle(cx, cy, r - STROKE, BLACK, fill=True)
 
 def draw_cursor(col):
-    py_top = OFFSET_Y - 2
-    py_bottom = OFFSET_Y + GRID_ROWS*CELL_SIZE + 1
+    py_top = OFFSET_Y - SCREEN.u(2)
+    py_bottom = OFFSET_Y + GRID_ROWS*CELL_SIZE + SCREEN.u(1)
     for i in range(CELL_SIZE):
         px = OFFSET_X + col * CELL_SIZE + i
+        # traits de STROKE pixels : vers le haut au-dessus du plateau,
+        # vers le bas en dessous
         if in_circle(px, py_top):
-            display.pixel(px, py_top, 255)
+            SCREEN.rect(px, py_top - STROKE + 1, 1, STROKE, WHITE, fill=True)
         if in_circle(px, py_bottom):
-            display.pixel(px, py_bottom, 255)
+            SCREEN.rect(px, py_bottom, 1, STROKE, WHITE, fill=True)
 
 def draw_numbers():
+    # Chiffres de 8 x SCREEN.k pixels, centrés sur leur case
+    digit = 8 * SCREEN.k
     # Colonnes (numéros en haut)
     for col in range(GRID_COLS):
         num = str(col+1)
-        px = OFFSET_X + col * CELL_SIZE + CELL_SIZE//3
-        py = OFFSET_Y - 10
-        display.framebuf.text(num, px, py, 255)
+        px = OFFSET_X + col * CELL_SIZE + (CELL_SIZE - digit) // 2
+        py = OFFSET_Y - SCREEN.u(10) - STROKE + 1  # au-dessus du curseur
+        SCREEN.text(num, (px, py), WHITE, scale=SCREEN.k)
     # Lignes (numéros à gauche)
     for row in range(GRID_ROWS):
         num = str(row+1)
-        px = OFFSET_X - 10
-        py = OFFSET_Y + row * CELL_SIZE + CELL_SIZE//3
-        display.framebuf.text(num, px, py, 255)
+        px = OFFSET_X - SCREEN.u(10)
+        py = OFFSET_Y + row * CELL_SIZE + (CELL_SIZE - digit) // 2
+        SCREEN.text(num, (px, py), WHITE, scale=SCREEN.k)
 
 def check_winner(board):
     for y in range(GRID_ROWS):
@@ -100,7 +105,7 @@ async def game_screen():
     winner = 0
 
     while not winner:
-        display.fill(0)
+        SCREEN.clear()
 
         # Affiche le plateau et les numéros
         draw_numbers()
@@ -111,7 +116,7 @@ async def game_screen():
         # Affiche le curseur
         draw_cursor(cursor_col)
 
-        display.show()
+        SCREEN.show()
         await asyncio.sleep(0.05)
 
         # Lecture boutons
@@ -134,21 +139,22 @@ async def game_screen():
     return winner
 
 async def game_over_screen(winner):
-    display.fill(0)
+    SCREEN.clear()
     if winner == PLAYER_CROSS:
-        display.framebuf.text("Cross Wins!", 20, 50, 255)
+        SCREEN.text("Cross Wins!", "CENTER", WHITE)
     else:
-        display.framebuf.text("Circle Wins!", 20, 50, 255)
-    display.framebuf.text("MENU to restart", 5, 70, 200)
-    display.show()
+        SCREEN.text("Circle Wins!", "CENTER", WHITE)
+    # 15 caractères ne tiennent pas sur une ligne de l'écran rond de 240 px
+    SCREEN.subtitle("MENU to", "restart", color=LIGHT)
+    SCREEN.show()
     await wait_for_button(MENU_BUTTON)
     await asyncio.sleep(0.2)
 
 async def menu_screen():
-    display.fill(0)
-    display.framebuf.text("Puissance 4", 20, 40, 255)
-    display.framebuf.text("MENU to start", 10, 70, 200)
-    display.show()
+    SCREEN.clear()
+    SCREEN.text("Puissance 4", "CENTER", WHITE)
+    SCREEN.subtitle("MENU to start", color=LIGHT)
+    SCREEN.show()
     await wait_for_button(MENU_BUTTON)
     await asyncio.sleep(0.2)
 
