@@ -1,10 +1,13 @@
 import asyncio
 from time import sleep
 
-import ssd1327
+from machine import Pin
+from steami import Battery, Distance, Screen
 
-from machine import SPI, Pin
-from steami import Battery, Distance
+# The screen (SSD1327 on V1a/V1b, GC9A01 on V1c). begin() allocates the
+# image memory, so it comes first, before the other objects use the RAM.
+SCREEN = Screen()
+SCREEN.begin()
 
 LED_RED = Pin("LED_RED", Pin.OUT_PP)
 LED_GREEN = Pin("LED_GREEN", Pin.OUT_PP)
@@ -22,13 +25,6 @@ DISTANCE = Distance()  # DISTANCE.read(): distance in mm
 BATTERY = Battery()  # BATTERY.current(): average current in mA
 
 
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-
-display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
-
 async def wait_for_button():
     while True:
         if A_BUTTON.value() == 0:
@@ -44,13 +40,10 @@ async def wait_for_button():
 
 def display_menu(list, index):
     if not list:
-        display.text("No device ", text_x_center_position("No Device"), 65, 255)
+        SCREEN.text("No device ", "CENTER")
         return
-    for i, item in enumerate(list):
-        if i == index:
-            display.text(">", 15, ((i + 1) * 10)+65, 255)
-        display.text(item , 25, ((i + 1) * 10)+65, 255)
+    SCREEN.menu(list, index)
 
 def text_x_center_position(text):
-    x_position = (128 - (len(text) * 8) ) // 2 # Center the text
+    x_position = (SCREEN.width - (len(text) * 8 * SCREEN.k)) // 2 # Center the text
     return x_position

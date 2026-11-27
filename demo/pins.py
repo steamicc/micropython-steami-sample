@@ -1,10 +1,15 @@
 import asyncio
+import math
 from time import sleep
 
-import ssd1327
+from machine import Pin
+from steami import Distance, Humidity, Light, Screen, Temperature
+from steami_screen import WHITE
 
-from machine import SPI, Pin
-from steami import Distance, Humidity, Light, Temperature
+# The screen (SSD1327 on V1a/V1b, GC9A01 on V1c). begin() allocates the
+# image memory, so it comes first, before the other objects use the RAM.
+SCREEN = Screen()
+SCREEN.begin()
 
 LED_RED = Pin("LED_RED", Pin.OUT_PP)
 LED_GREEN = Pin("LED_GREEN", Pin.OUT_PP)
@@ -24,13 +29,6 @@ HUMIDITY = Humidity()  # HUMIDITY.read(): relative humidity in %
 LIGHT = Light()  # LIGHT.read(): ambient light, raw count (V1a/V1b only)
 
 
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-
-display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
-
 async def wait_for_button():
     while True:
         if A_BUTTON.value() == 0:
@@ -45,10 +43,24 @@ async def wait_for_button():
         await asyncio.sleep(0.1)
 
 def display_menu(name, list, index):
-    display.fill(0)
-    display.text(name, 45, 20, 255)
-    for i, item in enumerate(list):
-        if i == index:
-            display.text(">", 35, ((i + 1) * 10)+30, 255)
-        display.text(item , 45, ((i + 1) * 10)+30, 255)
-    display.show()
+    SCREEN.clear()
+    SCREEN.title(name, WHITE)
+    SCREEN.menu(list, index)
+    SCREEN.show()
+
+def display_line(text, y, color=WHITE):
+    """Draw text centred on row y (in 128 px units), cut to fit the screen.
+
+    On the round 240 px screen of the V1c, the line keeps the characters
+    that fit the circle at that row.
+    """
+    k = SCREEN.k
+    y = SCREEN.u(y)
+    room = SCREEN.width
+    if k > 1:
+        r = SCREEN.radius
+        cy = SCREEN.center[1]
+        d = max(abs(y - cy), abs(y + 8 * k - 1 - cy))
+        room = 2 * int(math.sqrt(max(0, r * r - d * d))) - 2 * k
+    text = text[: max(0, room) // (8 * k)]
+    SCREEN.text(text, ((SCREEN.width - len(text) * 8 * k) // 2, y), color, k)

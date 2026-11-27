@@ -68,10 +68,12 @@ async def ble_task(device_name, led):
 
 async def display_task(name):
     while True:
-        display.fill(0)
-        display.text("Peripheral node", 10, 60, 255)
-        display.text(name, 10, 70, 255)
-        display.show()
+        SCREEN.clear()
+        # 15 characters do not fit the round screen at scale SCREEN.k: scale 1
+        label = "Peripheral node"
+        SCREEN.text(label, ((SCREEN.width - len(label) * 8) // 2, SCREEN.u(60)), scale=1)
+        SCREEN.text(name, ((SCREEN.width - len(name) * 8 * SCREEN.k) // 2, SCREEN.u(70)), scale=SCREEN.k)
+        SCREEN.show()
         await asyncio.sleep(0.5)
 
 

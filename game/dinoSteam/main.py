@@ -1,6 +1,6 @@
 import asyncio
-import framebuf
 from pins import *
+from steami_screen import DARK, GREEN, WHITE
 
 # Bitmaps
 STeaMi_bitmap = bytearray([
@@ -26,10 +26,6 @@ Cactus_bitmap = bytearray([
     0b00100000,
 ])
 
-# Framebuffers
-STeaMi_buf = framebuf.FrameBuffer(STeaMi_bitmap, 8, 11, framebuf.MONO_HLSB)
-Cactus_buf = framebuf.FrameBuffer(Cactus_bitmap, 8, 6, framebuf.MONO_HLSB)
-
 # Boutons
 A_BUTTON = Pin("A_BUTTON", Pin.IN, Pin.PULL_UP)
 B_BUTTON = Pin("B_BUTTON", Pin.IN, Pin.PULL_UP)
@@ -41,29 +37,42 @@ STeaMi_X = 20
 JUMP_SMALL = -5
 JUMP_BIG = -6
 
+# Mise à l'échelle : le jeu calcule en unités de 128 px, SCREEN.u() les
+# convertit en pixels réels. Un pixel de sprite fait SCREEN.k pixels de côté
+# (1 sur 128 px, 2 sur l'écran rond de 240 px).
+PIX = SCREEN.k
+GROUND_PX = SCREEN.u(90)  # ligne du sol, en pixels réels
+
 # Fonctions d'affichage
+def draw_bitmap(bitmap, x, y, color):
+    # chaque bit à 1 devient un carré de PIX x PIX pixels
+    for row, byte in enumerate(bitmap):
+        for col in range(8):
+            if byte & (0x80 >> col):
+                SCREEN.rect(x + col * PIX, y + row * PIX, PIX, PIX, color, fill=True)
+
 def draw_background():
-    display.fill(0)
-    display.framebuf.line(0, 90, 128, 90, 255)
+    SCREEN.clear()
+    SCREEN.rect(0, GROUND_PX, SCREEN.width, PIX, WHITE, fill=True)
 
 def draw_STeaMi(x, y):
-    # s'assurer que blit reçoit des entiers
-    display.framebuf.blit(STeaMi_buf, int(x), int(y))
+    # x, y en unités de 128 px ; le bas du sprite garde sa hauteur au-dessus du sol
+    py = GROUND_PX - SCREEN.u(90 - len(STeaMi_bitmap) - y) - len(STeaMi_bitmap) * PIX
+    draw_bitmap(STeaMi_bitmap, SCREEN.u(x), py, WHITE)
 
 def draw_Cactus(x):
-    # cast en int pour éviter TypeError si x est float
-    display.framebuf.blit(Cactus_buf, int(x), 90 - 6)
+    # x en unités de 128 px (float accepté : SCREEN.u() rend un entier)
+    draw_bitmap(Cactus_bitmap, SCREEN.u(x), GROUND_PX - len(Cactus_bitmap) * PIX, GREEN)
 
 async def wait_for_button(button):
     while button.value() != 0:
         await asyncio.sleep(0.02)
 
 async def menu_screen():
-    display.fill(0)
-    display.framebuf.text("Dino Steam", 25, 40, 255)
-    display.framebuf.text("Menu to start", 10, 70, 50)
-    display.framebuf.text("A/B to jump", 18, 80, 50)
-    display.show()
+    SCREEN.clear()
+    SCREEN.text("Dino Steam", "CENTER", WHITE)
+    SCREEN.subtitle("Menu to start", "A/B to jump", color=DARK)
+    SCREEN.show()
     await wait_for_button(MENU_BUTTON)
     await asyncio.sleep(0.2)  # Anti double appui
 
@@ -116,7 +125,7 @@ async def game_screen():
         draw_STeaMi(STeaMi_X, int(y_steami))
 
         # Afficher le score
-        display.framebuf.text("{}".format(points), 64, 100, 255)
+        SCREEN.text("{}".format(points), "S", WHITE)
 
         # Collision (utiliser int pour comparer correctement)
         cactus_x = int(pos_cactus)
@@ -127,22 +136,23 @@ async def game_screen():
         if MENU_BUTTON.value() == 0:
             while MENU_BUTTON.value() == 0:
                 await asyncio.sleep(0.02)
-            display.framebuf.text("Pause", 40, 40, 255)
-            display.show()
+            SCREEN.text("Pause", "N", WHITE)
+            SCREEN.show()
             while MENU_BUTTON.value() == 1:
                 await asyncio.sleep(0.02)
             while MENU_BUTTON.value() == 0:
                 await asyncio.sleep(0.02)
 
-        display.show()
+        SCREEN.show()
         await asyncio.sleep(0.02)  # tu peux réduire cette valeur pour accélérer globalement
 
 async def game_over_screen(points):
-    display.fill(0)
-    display.framebuf.text("GAME OVER!", 25, 40, 255)
-    display.framebuf.text("Score: {}".format(points), 30, 60, 255)
-    display.framebuf.text("Menu to restart", 5, 80, 50)
-    display.show()
+    SCREEN.clear()
+    SCREEN.text("GAME OVER!", "N", WHITE)
+    SCREEN.text("Score: {}".format(points), "CENTER", WHITE)
+    # 15 caractères ne tiennent pas sur une ligne de l'écran rond de 240 px
+    SCREEN.subtitle("Menu to", "restart", color=DARK)
+    SCREEN.show()
     await wait_for_button(MENU_BUTTON)
     await asyncio.sleep(0.2)  # Anti double appui
 

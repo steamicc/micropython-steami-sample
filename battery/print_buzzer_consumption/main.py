@@ -4,11 +4,6 @@ import time
 # Nombre de mesures par test
 N_MEASURES = 10
 
-# --- Affichage texte centré ---
-def draw_text(display, text, y_start, screen_width=128, char_width=8):
-    x = (screen_width - len(text) * char_width) // 2
-    display.text(text, x, y_start)
-
 # --- Fonction de mesure moyenne ---
 def measure_average(n=N_MEASURES, action_before=None, action_after=None):
     values = []
@@ -66,17 +61,19 @@ def run_buzzer_tests():
             print(f"Freq: {f} Hz | Duree: {d} ms | Conso: {current:.2f} mA | Diff: {current - current_temoin:.2f} mA")
 
             # Affichage OLED
-            display.fill(0)
-            draw_text(display, f"Freq : {f}Hz", 44)
-            draw_text(display, f"Duree: {d}ms", 54)
-            draw_text(display, f"Conso: {current:.1f}mA", 64)
-            draw_text(display, f"Diff : {current - current_temoin:.1f}mA", 74)
-            display.show()
+            SCREEN.clear()
+            show_lines([
+                f"Freq : {f}Hz",
+                f"Duree: {d}ms",
+                f"Conso: {current:.1f}mA",
+                f"Diff : {current - current_temoin:.1f}mA",
+            ])
+            SCREEN.show()
             sleep(2)
 
             # Effacer l'écran avant le test suivant
-            display.fill(0)
-            display.show()
+            SCREEN.clear()
+            SCREEN.show()
             sleep(1)
 
 

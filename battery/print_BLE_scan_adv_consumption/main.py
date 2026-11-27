@@ -1,10 +1,10 @@
+from pins import *   # BATTERY.current(), SCREEN (begin() avant les imports BLE : il alloue 40 Ko)
 import bluetooth
 import uasyncio as asyncio
 import aioble
 import struct
 import urandom
 from time import ticks_ms
-from pins import *   # BATTERY.current(), display
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
@@ -60,21 +60,15 @@ def extract_manufacturer_data(adv_bytes):
         i += 1 + length
     return None
 
-# --- Affichage texte centré ---
-def draw_text(display, text, y_start, screen_width=128, char_width=8):
-    x = (screen_width - len(text) * char_width) // 2
-    display.text(text, x, y_start)
-
 # --- Tâche BLE avec données random ---
 async def ble_task():
     while True:
         print("BLE Task: Starting scan...")
 
         # --- Mesure consommation témoin ---
-        display.fill(0)
-        draw_text(display, "Mesure en", 60)
-        draw_text(display, "cours ...", 70)
-        display.show()
+        SCREEN.clear()
+        show_lines(["Mesure en", "cours ..."])
+        SCREEN.show()
         curr_baseline = measure_average()
         print(f"[Conso TEMOIN] {curr_baseline:.2f} mA")
 
@@ -121,17 +115,19 @@ async def ble_task():
         await asyncio.sleep(2)
 
         # Affichage des consommations
-        display.fill(0)
-        draw_text(display, f"{device_name}", 40)
-        draw_text(display, f"T : {curr_baseline:.2f} mA", 60)
-        draw_text(display, f"S : {curr_scan:.2f} mA", 70)
-        draw_text(display, f"A : {curr_adv:.2f} mA", 80)
-        display.show()
+        SCREEN.clear()
+        show_lines([
+            f"{device_name}",
+            f"T : {curr_baseline:.2f} mA",
+            f"S : {curr_scan:.2f} mA",
+            f"A : {curr_adv:.2f} mA",
+        ])
+        SCREEN.show()
 
         await asyncio.sleep(5) # Pause avant la prochaine itération
 
-        display.fill(0) # Effacer l'écran
-        display.show() # Mettre à jour l'affichage
+        SCREEN.clear() # Effacer l'écran
+        SCREEN.show() # Mettre à jour l'affichage
 
 # --- Main ---
 async def main():

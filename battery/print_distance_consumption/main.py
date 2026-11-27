@@ -25,11 +25,6 @@ def measure_average(n=N_MEASURES, action_before=None, action_after=None):
 
     return sum(values) / len(values) if values else 0
 
-# Fonction pour afficher texte centré sur l'écran
-def center_text(text, y):
-    x = (128 - len(text)*8) // 2
-    display.text(text, x, y)
-
 # Boucle principale
 while True:
     # Mesure sans activer le capteur (distance non lue)
@@ -43,17 +38,19 @@ while True:
     print(f"Distance: {dist} mm, consommation capteur ON: {curr_active:.2f} mA")
 
     # Affichage sur OLED
-    display.fill(0)
-    center_text("Consommation", 30)
-    center_text("capteur VL53L1X", 40)
-    center_text(f"OFF: {curr_idle:.1f} mA", 60)
-    center_text(f"ON : {curr_active:.1f} mA", 70)
-    center_text(f"Diff: {curr_active - curr_idle:.1f} mA", 80)
-    center_text("Distance:", 100)
-    center_text(f"{dist} mm", 110)
-    display.show()
+    SCREEN.clear()
+    show_lines([
+        "Consommation",
+        "capteur VL53L1X",
+        f"OFF: {curr_idle:.1f} mA",
+        f"ON : {curr_active:.1f} mA",
+        f"Diff: {curr_active - curr_idle:.1f} mA",
+        "Distance:",
+        f"{dist} mm",
+    ])
+    SCREEN.show()
 
     sleep(5)  # délai avant la prochaine mesure
-    display.fill(0) # effacer l'écran
-    display.show() # mettre à jour l'écran
+    SCREEN.clear() # effacer l'écran
+    SCREEN.show() # mettre à jour l'écran
     sleep(1) # court délai avant la prochaine boucle

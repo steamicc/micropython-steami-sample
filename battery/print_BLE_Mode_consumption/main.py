@@ -1,4 +1,4 @@
-from pins import *   # pour BATTERY.current() et display si dispo
+from pins import *   # pour BATTERY.current() et SCREEN si dispo
 
 import bluetooth
 import aioble
@@ -65,11 +65,9 @@ def start_adv_slow():
     loop = asyncio.get_event_loop()
     loop.create_task(adv_slow())
 
-# --- Fonction d'affichage sur OLED ---
-def show_on_display(title, val, y):
-    text = f"{title}: {val:.1f} mA"
-    x = max((128 - len(text)*8)//2, 0)  # centrage
-    display.text(text, x, y, 255)
+# --- Ligne de résultat pour l'affichage sur OLED ---
+def result_line(title, val):
+    return f"{title}: {val:.1f} mA"
 
 while True:
     # ==========================
@@ -100,16 +98,18 @@ while True:
     # ==========================
     # Résumé affichage OLED
     # ==========================
-    display.fill(0)
+    SCREEN.clear()
 
-    show_on_display("T", curr_baseline, 50)
-    show_on_display("ADV R", curr_adv_fast, 60)
-    show_on_display("ADV L", curr_adv_slow, 70)
+    show_lines([
+        result_line("T", curr_baseline),
+        result_line("ADV R", curr_adv_fast),
+        result_line("ADV L", curr_adv_slow),
+    ])
 
-    display.show()
+    SCREEN.show()
 
     # Pause avant nouvelle série de mesures
     sleep(5)
-    display.fill(0)
-    display.show()
+    SCREEN.clear()
+    SCREEN.show()
     ble.active(False)

@@ -6,13 +6,19 @@ import asyncio
 sounds = ["HAPPY", "SAD", "EPIC","PIRATES","UNDERSEA","EXIT"]
 
 def draw_progress_arc(display, center_x, center_y, radius, percent):
-    angle = int(360 * percent)
+    # Trait de 2 px en unités de 128 px et pas d'angle de 1/k degré :
+    # l'anneau reste plein sur l'écran rond de 240 px (k = 2).
+    k = display.k
+    angle = int(360 * k * percent)
+    inner = radius - 2 * k + 1  # deux cercles concentriques sur 128 px
     for a in range(angle):
-        rad = math.radians(a)
-        for r in [radius, radius - 1]:  # deux cercles concentriques
-            x = int(center_x + r * math.cos(rad))
-            y = int(center_y + r * math.sin(rad))
-            display.pixel(x, y, 255)
+        rad = math.radians(a / k)
+        c = math.cos(rad)
+        s = math.sin(rad)
+        display.line(
+            int(center_x + radius * c), int(center_y + radius * s),
+            int(center_x + inner * c), int(center_y + inner * s), WHITE
+        )
 
 def tone(pin, freq, duration_ms):
     if freq == 0:
@@ -30,8 +36,8 @@ def tone(pin, freq, duration_ms):
 def play_song(song):
     start = time.ticks_ms()
     duration_total = sum(duration for _, duration in song)
-    center = 64
-    radius = 62
+    center_x, center_y = SCREEN.center
+    radius = SCREEN.radius - SCREEN.u(2)
 
     for freq, duration in song:
         tone(SPEAKER, freq, duration)
@@ -42,8 +48,8 @@ def play_song(song):
         percent = min(elapsed / duration_total, 1.0)
 
         # Dessine la progression circulaire
-        draw_progress_arc(display, center, center, radius, percent)
-        display.show()
+        draw_progress_arc(SCREEN, center_x, center_y, radius, percent)
+        SCREEN.show()
 
         if elapsed >= duration_total:
             break

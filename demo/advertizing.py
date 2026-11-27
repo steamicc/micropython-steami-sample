@@ -3,7 +3,7 @@ import uasyncio as asyncio
 import aioble
 import struct
 from time import ticks_ms, ticks_diff
-from pins import *  # Assure-toi que DISTANCE et display sont bien définis ici
+from pins import *  # Assure-toi que DISTANCE et SCREEN sont bien définis ici
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
@@ -45,7 +45,11 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((128 - len(text) * 8) // 2, 0)
+    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
+
+def text_at(text, x, y):
+    # y en unités de 128 px, glyphes agrandis k fois (2 sur l'écran de 240 px)
+    SCREEN.text(text, (x, SCREEN.u(y)), WHITE, SCREEN.k)
 
 # === Tâches ===
 async def sensor_task():
@@ -96,15 +100,15 @@ async def ble_task():
 async def display_task():
     try:
         while True:
-            display.fill(0)
-            display.text(device_name, text_x_center(device_name), 20, 255)
-            display.text(f"Me: {local_distance}", text_x_center("Me: XXX"), 30, 255)
+            SCREEN.clear()
+            SCREEN.title(device_name, WHITE)
+            text_at(f"Me: {local_distance}", text_x_center("Me: XXX"), 32)
             recent_devices = sorted(devices_distances.items(), key=lambda item: item[1][1], reverse=True)[:4]
             y = 50
             for name, (dist, _) in recent_devices:
-                display.text(f"{name[-4:]}: {dist}", text_x_center("XXXX: XXX"), y, 255)
+                text_at(f"{name[-4:]}: {dist}", text_x_center("XXXX: XXX"), y)
                 y += 10
-            display.show()
+            SCREEN.show()
             await asyncio.sleep(0.2)
     except asyncio.CancelledError:
         print("Display task cancelled.")

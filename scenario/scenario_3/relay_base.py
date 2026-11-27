@@ -50,10 +50,12 @@ async def ble_task(device_name):
 
 async def display_task(name):
     while True:
-        display.fill(0)
-        display.text(name, 10, 20, 255)
-        display.text("Relay mesh node", 10, 35, 255)
-        display.show()
+        SCREEN.clear()
+        SCREEN.text(name, "N")
+        # 15 characters do not fit the round screen at scale SCREEN.k: scale 1
+        label = "Relay mesh node"
+        SCREEN.text(label, ((SCREEN.width - len(label) * 8) // 2, SCREEN.u(35)), scale=1)
+        SCREEN.show()
         await asyncio.sleep(0.5)
 
 

@@ -2,15 +2,15 @@ from pins import *
 
 
 def display_pressed(button):
-    display.fill(0)
-    display.text("BUTTON", 45, 20, 255)
-    display.text(button, 60, 60, 255)
-    display.show()
+    SCREEN.clear()
+    SCREEN.title("BUTTON", WHITE)
+    SCREEN.text(button, "CENTER", WHITE)
+    SCREEN.show()
 
 async def button_menu():
-    display.fill(0)
-    display.text("BUTTON", 45, 20, 255)
-    display.show()
+    SCREEN.clear()
+    SCREEN.title("BUTTON", WHITE)
+    SCREEN.show()
 
     print("--- BUTTON ---")
 

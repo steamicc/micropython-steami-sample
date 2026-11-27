@@ -1,10 +1,10 @@
+from pins import *  # begin() de l'écran avant les imports BLE : il alloue 40 Ko
 from micropython import const
 import asyncio
 import aioble
 import bluetooth
 import struct
 import time
-from pins import *
 
 # UUIDs
 _ENV_SENSE_UUID = bluetooth.UUID(0x181A)
@@ -92,11 +92,11 @@ async def peripheral_task():
 async def display_task():
     global devices_index, connected_devices, device_name, distance, client_name
     while True:
-        display.fill(0)
-        display.text(device_name, text_x_center_position(device_name), 25, 255)
-        display.text(f"{distance}mm", text_x_center_position(f"{distance}mm"), 45, 255)
+        SCREEN.clear()
+        SCREEN.title(device_name)
         display_menu(connected_devices, devices_index)
-        display.show()
+        SCREEN.text(f"{distance}mm", "S")
+        SCREEN.show()
         await asyncio.sleep(0.1)
 
 # Task to handle button inputs

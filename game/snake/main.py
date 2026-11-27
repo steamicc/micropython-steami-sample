@@ -2,6 +2,7 @@ import asyncio
 import random
 from math import sqrt
 from pins import *
+from steami_screen import DARK, LIGHT, RED, WHITE
 
 # Constantes
 GRID_SIZE = 4 # taille d'une case
@@ -10,6 +11,13 @@ CENTER_Y = 64
 RADIUS = 64  # rayon du cercle
 GRID_WIDTH = 128 // GRID_SIZE
 GRID_HEIGHT = 128 // GRID_SIZE
+
+# Le jeu calcule sur la grille de 128 px ; à l'écran, une case fait CELL
+# pixels réels (4 sur 128 px, 7 sur l'écran rond de 240 px) et la grille
+# est centrée.
+CELL = SCREEN.width // GRID_WIDTH
+ORIGIN_X = (SCREEN.width - GRID_WIDTH * CELL) // 2
+ORIGIN_Y = (SCREEN.height - GRID_HEIGHT * CELL) // 2
 
 # Directions
 UP = (0, -1)
@@ -28,11 +36,11 @@ async def wait_for_button(button):
         await asyncio.sleep(0.02)
 
 # Dessine une case si elle est dans le cercle
-def draw_cell(x, y, color=255):
+def draw_cell(x, y, color=WHITE):
     px = x * GRID_SIZE + GRID_SIZE//2
     py = y * GRID_SIZE + GRID_SIZE//2
     if sqrt((px - CENTER_X)**2 + (py - CENTER_Y)**2) <= RADIUS:
-        display.framebuf.fill_rect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE, color)
+        SCREEN.rect(ORIGIN_X + x * CELL, ORIGIN_Y + y * CELL, CELL, CELL, color, fill=True)
 
 # Vérifie si la case est dans le cercle
 def in_circle(x, y):
@@ -42,11 +50,10 @@ def in_circle(x, y):
 
 # Ecran de menu
 async def menu_screen():
-    display.fill(0)
-    display.framebuf.text("SNAKE CIRCLE", 20, 40, 255)
-    display.framebuf.text("Menu to start", 15, 70, 200)
-    display.framebuf.text("A/B to move", 20, 85, 200)
-    display.show()
+    SCREEN.clear()
+    SCREEN.text("SNAKE CIRCLE", "CENTER", WHITE)
+    SCREEN.subtitle("Menu to start", "A/B to move", color=LIGHT)
+    SCREEN.show()
     await wait_for_button(MENU_BUTTON)
     await asyncio.sleep(0.2)
 
@@ -68,7 +75,7 @@ async def game_screen():
     score = 0
 
     while True:
-        display.fill(0)
+        SCREEN.clear()
 
         # Lecture boutons : simple mapping
         if A_BUTTON.value() == 0 and direction == DOWN:
@@ -116,25 +123,27 @@ async def game_screen():
             # sinon, enlève la queue
             snake.pop()
 
+        # Score (en bas, dans le cercle : tracé en premier et en gris foncé,
+        # le serpent et la pomme passent par-dessus)
+        SCREEN.text("{}".format(score), "S", DARK)
+
         # Dessine serpent
         for (x, y) in snake:
-            draw_cell(x, y, 255)
+            draw_cell(x, y, WHITE)
 
         # Dessine pomme
-        draw_cell(food[0], food[1], 150)
+        draw_cell(food[0], food[1], RED)
 
-        # Score
-        display.framebuf.text("{}".format(score), 2, 120, 255)
-
-        display.show()
+        SCREEN.show()
         await asyncio.sleep(0.15)  # vitesse du jeu
 
 async def game_over_screen(score):
-    display.fill(0)
-    display.framebuf.text("GAME OVER", 25, 40, 255)
-    display.framebuf.text("Score: {}".format(score), 30, 60, 255)
-    display.framebuf.text("Menu to restart", 5, 80, 200)
-    display.show()
+    SCREEN.clear()
+    SCREEN.text("GAME OVER", "N", WHITE)
+    SCREEN.text("Score: {}".format(score), "CENTER", WHITE)
+    # 15 caractères ne tiennent pas sur une ligne de l'écran rond de 240 px
+    SCREEN.subtitle("Menu to", "restart", color=LIGHT)
+    SCREEN.show()
     await wait_for_button(MENU_BUTTON)
     await asyncio.sleep(0.2)
 

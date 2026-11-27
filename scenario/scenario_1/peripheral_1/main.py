@@ -43,7 +43,7 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((128 - len(text) * 8) // 2, 0)
+    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
 
 # === Tâches ===
 async def ble_task():
@@ -78,11 +78,11 @@ async def energy_task():
 
 async def display_task():
     while True:
-        display.fill(0)
-        display.text(device_name, text_x_center(device_name), 50, 255)
-        display.text(f"Me: {local_distance}", text_x_center("Me: XXX"), 60, 255)
-        display.text(f"I: {energy_current:.1f} mA", text_x_center("I: XXXXX"), 70, 255)
-        display.show()
+        SCREEN.clear()
+        SCREEN.text(device_name, (text_x_center(device_name), SCREEN.u(50)), scale=SCREEN.k)
+        SCREEN.text(f"Me: {local_distance}", (text_x_center("Me: XXX"), SCREEN.u(60)), scale=SCREEN.k)
+        SCREEN.text(f"I: {energy_current:.1f} mA", (text_x_center("I: XXXXX"), SCREEN.u(70)), scale=SCREEN.k)
+        SCREEN.show()
         await asyncio.sleep(0.5)
 
 async def main():

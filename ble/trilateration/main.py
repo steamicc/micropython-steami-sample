@@ -1,4 +1,4 @@
-"""BLE trilateration indoor positioning example using aioble and SSD1327 OLED.
+"""BLE trilateration indoor positioning example using aioble and the OLED/LCD screen.
 
 3 fixed beacon boards broadcast their identity. A mobile board scans all 3,
 converts RSSI to distance using the log-distance path loss model, then
@@ -33,7 +33,8 @@ Beacon coordinates (cm, measured on site, to adapt to your room):
 
 Hardware:
     - 4 STeaMi boards (3 beacons + 1 mobile)
-    - SSD1327 128x128 OLED on mobile board
+    - Round OLED/LCD screen on mobile board (SSD1327 128x128 on V1a/V1b,
+      GC9A01 240x240 on V1c)
     - D-PAD for menu navigation
 """
 
@@ -42,8 +43,7 @@ import uasyncio as asyncio
 from time import sleep_ms, ticks_diff, ticks_ms
 
 import aioble
-import ssd1327
-from machine import I2C, SPI, Pin
+from machine import I2C, Pin
 from mcp23009e import MCP23009E
 from mcp23009e.const import (
     MCP23009_BTN_DOWN,
@@ -55,7 +55,13 @@ from mcp23009e.const import (
     MCP23009_LOGIC_LOW,
     MCP23009_PULLUP,
 )
-from steami_screen import DARK, GRAY, LIGHT, Screen, SSD1327Display, WHITE
+from steami import Screen
+from steami_screen import DARK, GRAY, LIGHT, WHITE
+
+# === Display ===
+# begin() first: the frame buffer needs a large block of RAM.
+screen = Screen()
+screen.begin()
 
 # === Beacon names ===
 BEACON_NAMES = ["Beacon_M1", "Beacon_M2", "Beacon_M3"]
@@ -105,14 +111,6 @@ RSSI_SAMPLES = 8
 ALPHA = 0.15  # Exponential smoothing: 0.0=max smooth, 1.0=no filter
 MIN_MOVE_CM = 15  # Ignore position changes smaller than this
 
-# === Display ===
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
-screen = Screen(display)
-
 # === Buttons ===
 i2c = I2C(1)
 reset_expander = Pin("RST_EXPANDER", Pin.OUT)
@@ -133,10 +131,11 @@ stop_flag = False
 rssi_history = {name: [] for name in BEACON_NAMES}
 
 # === Map display area (pixels) ===
-MAP_X = 28
-MAP_Y = 14
-MAP_W = 72
-MAP_H = 72
+# Laid out in 128 px units, scaled to the real screen size by screen.u().
+MAP_X = screen.u(28)
+MAP_Y = screen.u(14)
+MAP_W = screen.u(72)
+MAP_H = screen.u(72)
 
 # === Real space bounding box (cm) ===
 SPACE_W = 450
@@ -190,7 +189,7 @@ def menu_select(title, items):
         screen.clear()
         screen.title(title)
         screen.menu(items, selected=selected)
-        screen.subtitle("UP/DOWN: nav", "RIGHT: confirm")
+        screen.subtitle("UP/DOWN: nav", "RIGHT: OK")
         screen.show()
 
         sleep_ms(150)
@@ -333,7 +332,7 @@ async def beacon_display_task(beacon_name):
     while not stop_flag:
         screen.clear()
         screen.title("BEACON")
-        screen.subtitle(beacon_name, "Broadcasting...", "LEFT: menu")
+        screen.subtitle(beacon_name, "Broadcasting", "LEFT: menu")
         screen.show()
         await asyncio.sleep_ms(1000)
 
@@ -418,18 +417,19 @@ async def mobile_display_task():
         # Draw beacon markers with labels
         for name, (cx, cy) in BEACON_POS.items():
             px, py = world_to_screen(cx, cy)
-            screen.rect(px - 3, py - 3, 6, 6, LIGHT, fill=True)
+            half = screen.u(3)
+            screen.rect(px - half, py - half, 2 * half, 2 * half, LIGHT, fill=True)
             short = name[-2:]
-            lx = px - 8
-            ly = py - 14 if py > MAP_Y + 20 else py + 8
-            display.text(short, lx, ly, GRAY)
+            lx = px - 8 * screen.k
+            ly = py - screen.u(14) if py > MAP_Y + screen.u(20) else py + screen.u(8)
+            screen.text(short, (lx, ly), GRAY, scale=screen.k)
 
         # Draw filtered position
         if estimated_pos:
             ex = max(0, min(SPACE_W, estimated_pos[0]))
             ey = max(0, min(SPACE_H, estimated_pos[1]))
             px, py = world_to_screen(ex, ey)
-            screen.circle(px, py, 3, WHITE, fill=True)
+            screen.circle(px, py, screen.u(3), WHITE, fill=True)
 
         # Distances in subtitle
         if distances:
@@ -468,7 +468,7 @@ while True:
     mode_idx = menu_select("SELECT MODE", ["MOBILE", "BEACON"])
 
     if mode_idx == 1:
-        beacon_idx = menu_select("SELECT BEACON", BEACON_NAMES)
+        beacon_idx = menu_select("PICK BEACON", BEACON_NAMES)
         beacon_name = BEACON_NAMES[beacon_idx]
 
         screen.clear()
@@ -480,15 +480,15 @@ while True:
         asyncio.run(run_beacon(beacon_name))
 
         screen.clear()
-        screen.title("BEACON STOPPED")
-        screen.subtitle("Returning to menu...")
+        screen.title("STOPPED")
+        screen.subtitle("Back to menu")
         screen.show()
         sleep_ms(1000)
 
     else:
         screen.clear()
         screen.title("TRILATERATION")
-        screen.subtitle("Scanning beacons...", "LEFT: menu")
+        screen.subtitle("Scanning...", "LEFT: menu")
         screen.show()
         sleep_ms(500)
 
@@ -496,6 +496,6 @@ while True:
 
         screen.clear()
         screen.title("STOPPED")
-        screen.subtitle("Returning to menu...")
+        screen.subtitle("Back to menu")
         screen.show()
         sleep_ms(1000)

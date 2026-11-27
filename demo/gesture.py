@@ -7,11 +7,11 @@ gesture = Gesture()
 
 
 def display_gesture(text):
-    display.fill(0)
-    display.text("GESTURE", 45, 20)
-    display.text(text, 5, 50)
-    display.text("MENU: back", 5, 90)
-    display.show()
+    SCREEN.clear()
+    SCREEN.title("GESTURE", WHITE)
+    display_line(text, 50)
+    display_line("MENU: back", 90)
+    SCREEN.show()
 
 
 async def gesture_menu():

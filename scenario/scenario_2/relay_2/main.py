@@ -3,7 +3,7 @@ import uasyncio as asyncio
 import aioble
 import struct
 from time import ticks_ms
-from pins import *  # LED_RED, LED_GREEN, LED_BLUE, display, BATTERY
+from pins import *  # LED_RED, LED_GREEN, LED_BLUE, SCREEN, BATTERY
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
@@ -44,7 +44,7 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((128 - len(text) * 8) // 2, 0)
+    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
 
 # === Tâche BLE principale ===
 async def ble_task():
@@ -113,11 +113,11 @@ async def display_task():
             print("Erreur lecture énergie :", e)
             energy_value = 0.0
 
-        display.fill(0)
-        display.text(device_name, text_x_center(device_name), 10, 255)
+        SCREEN.clear()
+        SCREEN.text(device_name, "N")
 
         # Afficher la consommation d'énergie
-        display.text(f"E:{energy_value:.2f} mA", text_x_center("E:000.00 mA"), 25, 255)
+        SCREEN.text(f"E:{energy_value:.2f} mA", (text_x_center("E:000.00 mA"), SCREEN.u(32)), scale=SCREEN.k)
 
         # Appareils récemment vus
         recent_devices = sorted(
@@ -128,10 +128,10 @@ async def display_task():
 
         y = 45
         for name, (dist, _) in recent_devices:
-            display.text(f"{name[-4:]}: {dist}", text_x_center("XXXX: XXX"), y, 255)
+            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center("XXXX: XXX"), SCREEN.u(y)), scale=SCREEN.k)
             y += 10
 
-        display.show()
+        SCREEN.show()
         await asyncio.sleep(0.5)
 
 # === Programme principal ===
