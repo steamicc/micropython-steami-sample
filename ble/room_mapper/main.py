@@ -261,16 +261,15 @@ async def scanner_display_task():
             screen.title("ROOM MAPPER")
 
             measures = fresh_rssi()
-            cx, cy = screen.center
-            k = screen.k
-            y = screen.u(38)
+            y = screen.u(40)
+            line_h = screen.text_height() + screen.u(6)  # text row + gap
             for name in BEACON_NAMES:
                 rssi = measures.get(name, "---")
                 short = name[-2:]
                 label = f"{short}: {rssi} dBm"
-                x = cx - len(label) * 4 * k
-                screen.text(label, (x, y), LIGHT, scale=k)
-                y += screen.u(14)
+                x = (screen.width - len(label) * 8) // 2
+                screen.text(label, (x, y), LIGHT)
+                y += line_h
 
             screen.subtitle(f"#{point_id}", "R:rec L:stop")
             screen.show()

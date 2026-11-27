@@ -39,7 +39,8 @@ async def wait_for_button():
 def display_menu(list, index):
     SCREEN.menu(list, index)
 
-def text_x_center_position(text):
-    # Center the text (real pixels, glyphs scaled by SCREEN.k)
-    x_position = (SCREEN.width - (len(text) * 8 * SCREEN.k)) // 2
+def text_x_center_position(text, scale=1):
+    # Center the text drawn in (x, y): a cell is 8 px wide (x scale)
+    # on 128 px as on 240 px
+    x_position = (SCREEN.width - len(text) * 8 * scale) // 2
     return x_position
