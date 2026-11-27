@@ -56,7 +56,7 @@ while True:
         "Off : {:.1f} mA".format(avg_off),
         "Texte : {:.1f} mA".format(avg_text),
         "Full : {:.1f} mA".format(avg_full),
-    ], pitch=14)
+    ], gap=6)
     SCREEN.show()
 
     print("========================================")

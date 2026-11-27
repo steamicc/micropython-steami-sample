@@ -30,25 +30,28 @@ HUMIDITY = Humidity()  # HUMIDITY.read(): relative humidity in %
 BATTERY = Battery()  # BATTERY.current(): average current in mA
 
 
-def show_lines(lines, pitch=10):
+def _in_circle(text, y, h):
+    """True when text, centered, its cells h px high from row y, fits the circle."""
+    cy = SCREEN.center[1]
+    dy = max(abs(y - cy), abs(y + h - 1 - cy))
+    return (len(text) * 8) ** 2 + 4 * dy * dy <= 4 * SCREEN.radius ** 2
+
+
+def show_lines(lines, gap=2):
     """Draw text lines centered, stacked in the middle of the screen.
 
-    pitch: distance between two rows, in 128 px units. The text is scaled
-    by SCREEN.k; on the round 240 px screen a line too wide for its row is
-    shrunk until it fits inside the circle.
+    Every line has the same size: the 8x8 font on 128 px, Spleen 8x16 on
+    240 px (a cell is 8 px wide on both). gap: space between two lines, in
+    eighths of the text height (2: 2 px on 128 px, 4 px on 240 px). On the
+    round screen the gap shrinks, down to 0, until every line fits inside
+    the circle.
     """
-    k = SCREEN.k
-    step = SCREEN.u(pitch)
-    cy = SCREEN.center[1]
-    y = (SCREEN.height - ((len(lines) - 1) * step + 8 * k)) // 2
-    for text in lines:
-        f = k
-        while f > 1:
-            dy = max(abs(y - cy), abs(y + 8 * f - cy))
-            half = math.sqrt(max(0, SCREEN.radius ** 2 - dy ** 2))
-            if len(text) * 8 * f <= 2 * half:
-                break
-            f -= 1
-        x = (SCREEN.width - len(text) * 8 * f) // 2
-        SCREEN.text(text, (x, y + 4 * (k - f)), scale=f)
-        y += step
+    h = SCREEN.text_height()
+    n = len(lines)
+    for g in range(gap, -1, -1):
+        step = h + h * g // 8
+        top = (SCREEN.height - (n - 1) * step - h) // 2
+        if all(_in_circle(t, top + i * step, h) for i, t in enumerate(lines)):
+            break
+    for i, text in enumerate(lines):
+        SCREEN.text(text, ((SCREEN.width - len(text) * 8) // 2, top + i * step))
