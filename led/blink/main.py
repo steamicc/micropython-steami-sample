@@ -12,11 +12,18 @@ led_green = pyb.LED(2)
 led_blue = pyb.LED(3)
 delay = 0.5
 
+# Texte : cellules de 8 px de large et SCREEN.text_height() de haut (8x8 sur
+# 128 px, Spleen 8x16 sur 240 px) ; une ligne toutes les hauteurs de cellule
+# + 2k px (10 sur 128 px, 20 sur 240 px). Le titre est en u(50), la liste
+# deux lignes plus bas.
+LINE = SCREEN.text_height() + 2 * SCREEN.k
+TOP = SCREEN.u(50)
+
 # Fonctions pour faire clignoter une LED
 def blink_led(led, couleur):
     SCREEN.clear()
-    draw_text("LED Allumée(s) :", SCREEN.u(50))
-    draw_text(f"- LED {couleur}", SCREEN.u(70))
+    draw_text("LED Allumée(s)", TOP)
+    draw_text(f"- LED {couleur}", TOP + 2 * LINE)
     SCREEN.show()
 
     led.on()
@@ -27,9 +34,9 @@ def blink_led(led, couleur):
 # Fonction pour faire clignoter deux LEDs
 def blink_two_leds(led1, led2, couleur1, couleur2):
     SCREEN.clear()
-    draw_text("LED Allumée(s) :", SCREEN.u(50))
-    draw_text(f"- LED {couleur1}", SCREEN.u(70))
-    draw_text(f"- LED{couleur2}", SCREEN.u(80))
+    draw_text("LED Allumée(s)", TOP)
+    draw_text(f"- LED {couleur1}", TOP + 2 * LINE)
+    draw_text(f"- LED {couleur2}", TOP + 3 * LINE)
     SCREEN.show()
 
     led1.on()
@@ -43,8 +50,8 @@ def blink_two_leds(led1, led2, couleur1, couleur2):
 def blink_all_leds():
 
     SCREEN.clear()
-    draw_text("LED Allumée(s) :", SCREEN.u(50))
-    draw_text("Toutes les LEDs", SCREEN.u(70))
+    draw_text("LED Allumée(s)", TOP)
+    draw_text("Toutes les LEDs", TOP + 2 * LINE)
     SCREEN.show()
 
     led_red.on()
@@ -56,40 +63,29 @@ def blink_all_leds():
     led_blue.off()
     sleep(delay)
 
-# --- Fonction pour remplacer les accents par ASCII simples ---
-def normalize_text(text):
-    replacements = {
-        'é':'e', 'è':'e', 'ê':'e', 'à':'a', 'ù':'u',
-        'ô':'o', 'î':'i', 'ç':'c', 'É':'E', 'À':'A',
-        'Ç':'C', 'Ô':'O'
-    }
-    for accented, simple in replacements.items():
-        text = text.replace(accented, simple)
-    return text
-
-# Fonction pour afficher le texte avec retour à la ligne et centrage automatique
+# Fonction pour afficher le texte avec retour à la ligne et centrage automatique.
+# Les accents sont dessinés par la police Spleen sur 240 px et ramenés à la
+# lettre simple par la bibliothèque sur 128 px.
 def draw_text(text, y_start):
     screen_width = SCREEN.width
     if SCREEN.k > 1:
         # Marge pour rester dans le cercle de l'écran rond
         screen_width -= SCREEN.u(10)
-    char_width = 8 * SCREEN.k
-    line_height = 8 * SCREEN.k
-    text = normalize_text(text)
+    char_width = 8
     words = text.split(" ")
     line = ""
     y = y_start
     for word in words:
         if len(line + word) * char_width > screen_width:
             x = (SCREEN.width - len(line.rstrip())*char_width) // 2
-            SCREEN.text(line.rstrip(), (x, y), scale=SCREEN.k)
-            y += line_height
+            SCREEN.text(line.rstrip(), (x, y))
+            y += LINE
             line = word + " "
         else:
             line += word + " "
     # Affiche la dernière ligne
     x = (SCREEN.width - len(line.rstrip())*char_width) // 2
-    SCREEN.text(line.rstrip(), (x, y), scale=SCREEN.k)
+    SCREEN.text(line.rstrip(), (x, y))
 
 while True:
     blink_led(led_red, "Rouge")

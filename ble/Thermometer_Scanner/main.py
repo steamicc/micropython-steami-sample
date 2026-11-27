@@ -109,7 +109,7 @@ async def display_loop():
 
         # Display selected device name
         name = list(collected_data.keys())[device_index]
-        SCREEN.text(name, (text_x_center_position(name), u(30)), scale=k)
+        SCREEN.text(name, (text_x_center_position(name), u(30)))
         SCREEN.line(0, u(41), SCREEN.width - 1, u(41), DARK)
 
         # Display measurement
@@ -136,14 +136,16 @@ async def display_loop():
 
         # Display the min and max values
         SCREEN.line(0, u(78), SCREEN.width - 1, u(78), DARK)
-        min_text = f"{min_measure:.2f} <"
-        max_text = f"> {max_measure:.2f}"
-        scale = k  # glyph factor: 1 when both texts do not fit side by side
-        while scale > 1 and (len(min_text) + len(max_text)) * 8 * scale + 4 > SCREEN.width - 2 * u(6):
-            scale -= 1
-        y = u(80) + 4 * (k - scale)
-        SCREEN.text(min_text, (u(6), y), scale=scale)
-        SCREEN.text(max_text, (SCREEN.width - u(6) - len(max_text) * 8 * scale, y), scale=scale)
+        for fmt in ("{:.2f}", "{:.1f}", "{:.0f}"):  # fewer decimals when too wide
+            min_text = fmt.format(min_measure) + " <"
+            max_text = "> " + fmt.format(max_measure)
+            if (len(min_text) + len(max_text)) * 8 + 4 <= SCREEN.width - 2 * u(6):
+                break
+        line_h = SCREEN.text_height() + u(2)  # text row + margin
+        y = u(78) + u(2)
+        SCREEN.text(min_text, (u(6), y))
+        SCREEN.text(max_text, (SCREEN.width - u(6) - len(max_text) * 8, y))
+        y += line_h
 
         # Display the last value received
         if collected_data[name]:
@@ -154,19 +156,20 @@ async def display_loop():
             else:
                 unit = "%"
             last_measure = f"{measurement[measurement_index][0].upper()}: {collected_data[name][-1][measurement[measurement_index]]:.2f}{unit}"
-            SCREEN.text(last_measure, (text_x_center_position(last_measure), u(90)), scale=k)
+            SCREEN.text(last_measure, (text_x_center_position(last_measure), y))
 
         # Display the time since the start of the program
-        SCREEN.line(0, u(99), SCREEN.width - 1, u(99), DARK)
+        y += line_h - u(1)
+        SCREEN.line(0, y, SCREEN.width - 1, y, DARK)
         duration = f"{int(time.time() - start_time)}s"
         SCREEN.text(duration, "S")
 
         SCREEN.show()
         await asyncio.sleep(1)
 
-# Function to center the text on the display (glyphs scaled by SCREEN.k)
-def text_x_center_position(text):
-    x_position = (SCREEN.width - (len(text) * 8 * SCREEN.k)) // 2 # Center the text
+# Function to center the text drawn in (x, y): a cell is 8 px wide (x scale)
+def text_x_center_position(text, scale=1):
+    x_position = (SCREEN.width - len(text) * 8 * scale) // 2 # Center the text
     return x_position
 
 # Function to handle button presses and change the displayed device or measurement

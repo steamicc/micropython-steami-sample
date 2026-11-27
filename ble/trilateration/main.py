@@ -420,9 +420,14 @@ async def mobile_display_task():
             half = screen.u(3)
             screen.rect(px - half, py - half, 2 * half, 2 * half, LIGHT, fill=True)
             short = name[-2:]
-            lx = px - 8 * screen.k
-            ly = py - screen.u(14) if py > MAP_Y + screen.u(20) else py + screen.u(8)
-            screen.text(short, (lx, ly), GRAY, scale=screen.k)
+            # Label centered on the marker, above it (below near the top edge)
+            lx = px - len(short) * 8 // 2
+            gap = half + screen.u(3)
+            if py > MAP_Y + screen.u(20):
+                ly = py - gap - screen.text_height()
+            else:
+                ly = py + gap
+            screen.text(short, (lx, ly), GRAY)
 
         # Draw filtered position
         if estimated_pos:

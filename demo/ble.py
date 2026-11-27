@@ -79,7 +79,7 @@ async def display_receive(results):
         SCREEN.title("RESULTS", WHITE)
         if not results:
             print("Aucun résultat à afficher.")
-            display_line("No results to show", 50)
+            display_line("No results", 50)
             return
         else :
             display_line(f"{result_index+1}/{len(results)}", 32)

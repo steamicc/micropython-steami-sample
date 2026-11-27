@@ -45,11 +45,12 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
+    # Cellules de 8 px de large sur les deux écrans
+    return max((SCREEN.width - len(text) * 8) // 2, 0)
 
 def text_at(text, x, y):
-    # y en unités de 128 px, glyphes agrandis k fois (2 sur l'écran de 240 px)
-    SCREEN.text(text, (x, SCREEN.u(y)), WHITE, SCREEN.k)
+    # y en pixels réels : police 8x8 sur 128 px, Spleen 8x16 sur 240 px
+    SCREEN.text(text, (x, y), WHITE)
 
 # === Tâches ===
 async def sensor_task():
@@ -102,12 +103,14 @@ async def display_task():
         while True:
             SCREEN.clear()
             SCREEN.title(device_name, WHITE)
-            text_at(f"Me: {local_distance}", text_x_center("Me: XXX"), 32)
+            text_at(f"Me: {local_distance}", text_x_center("Me: XXX"), SCREEN.u(32))
             recent_devices = sorted(devices_distances.items(), key=lambda item: item[1][1], reverse=True)[:4]
-            y = 50
+            # Une ligne toutes les hauteurs de cellule + 2k px (10 sur 128 px, 20 sur 240 px)
+            step = SCREEN.text_height() + 2 * SCREEN.k
+            y = SCREEN.u(50)
             for name, (dist, _) in recent_devices:
                 text_at(f"{name[-4:]}: {dist}", text_x_center("XXXX: XXX"), y)
-                y += 10
+                y += step
             SCREEN.show()
             await asyncio.sleep(0.2)
     except asyncio.CancelledError:

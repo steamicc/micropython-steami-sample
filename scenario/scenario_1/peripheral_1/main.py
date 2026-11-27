@@ -43,7 +43,7 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
+    return max((SCREEN.width - len(text) * 8) // 2, 0)
 
 # === Tâches ===
 async def ble_task():
@@ -77,11 +77,14 @@ async def energy_task():
         await asyncio.sleep(1)
 
 async def display_task():
+    # Three lines centred on the screen, one text cell height plus a margin apart
+    y = SCREEN.u(50)
+    step = SCREEN.text_height() + SCREEN.u(2)
     while True:
         SCREEN.clear()
-        SCREEN.text(device_name, (text_x_center(device_name), SCREEN.u(50)), scale=SCREEN.k)
-        SCREEN.text(f"Me: {local_distance}", (text_x_center("Me: XXX"), SCREEN.u(60)), scale=SCREEN.k)
-        SCREEN.text(f"I: {energy_current:.1f} mA", (text_x_center("I: XXXXX"), SCREEN.u(70)), scale=SCREEN.k)
+        SCREEN.text(device_name, (text_x_center(device_name), y))
+        SCREEN.text(f"Me: {local_distance}", (text_x_center("Me: XXX"), y + step))
+        SCREEN.text(f"I: {energy_current:.1f} mA", (text_x_center("I: XX.X mA"), y + 2 * step))
         SCREEN.show()
         await asyncio.sleep(0.5)
 

@@ -44,7 +44,7 @@ def extract_manufacturer_data(adv_bytes):
     return None
 
 def text_x_center(text):
-    return max((SCREEN.width - len(text) * 8 * SCREEN.k) // 2, 0)
+    return max((SCREEN.width - len(text) * 8) // 2, 0)
 
 # === Tâche BLE principale ===
 async def ble_task():
@@ -117,7 +117,7 @@ async def display_task():
         SCREEN.text(device_name, "N")
 
         # Afficher la consommation d'énergie
-        SCREEN.text(f"E:{energy_value:.2f} mA", (text_x_center("E:000.00 mA"), SCREEN.u(32)), scale=SCREEN.k)
+        SCREEN.text(f"E:{energy_value:.2f} mA", (text_x_center("E:000.00 mA"), SCREEN.u(34)))
 
         # Appareils récemment vus
         recent_devices = sorted(
@@ -126,10 +126,12 @@ async def display_task():
             reverse=True
         )[:4]
 
-        y = 45
+        # One text cell height plus a margin between two lines
+        y = SCREEN.u(48)
+        step = SCREEN.text_height() + SCREEN.u(2)
         for name, (dist, _) in recent_devices:
-            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center("XXXX: XXX"), SCREEN.u(y)), scale=SCREEN.k)
-            y += 10
+            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center("XXXX: XXX"), y))
+            y += step
 
         SCREEN.show()
         await asyncio.sleep(0.5)

@@ -12,21 +12,25 @@ def exit_display():
             break
 
 def display_Text():
-    # 16 columns on the 128 px screen; 12 on the round 240 px screen of the
-    # V1c (glyphs twice as big), so that the block stays inside the circle.
+    # A glyph is 8 px wide, SCREEN.text_height() px high (8x8 on 128 px,
+    # Spleen 8x16 on 240 px). 12 columns x 8 rows on 128 px; 16 columns x
+    # 6 rows on 240 px, with 4 px between columns and 2 px between rows.
+    # The block stays inside the round screen.
     k = SCREEN.k
-    cell = 8 * k
-    cols = 16 if k == 1 else 12
+    pad = 2 * (k - 1)
+    cell_w = 8 + 2 * pad
+    cell_h = SCREEN.text_height() + pad
+    cols = 12 if k == 1 else 16
     rows = (96 + cols - 1) // cols
-    x0 = (SCREEN.width - cols * cell) // 2
-    y0 = (SCREEN.height - rows * cell) // 2
+    x0 = (SCREEN.width - cols * cell_w) // 2 + pad
+    y0 = (SCREEN.height - rows * cell_h) // 2
     colors = (WHITE, LIGHT, GRAY, DARK, GREEN, RED, BLUE, YELLOW)
     SCREEN.clear()
     for i in range(32, 128):
         j = i - 32
-        x = x0 + (j % cols) * cell
-        y = y0 + (j // cols) * cell
-        SCREEN.text(chr(i), (x, y), colors[i % len(colors)], k)
+        x = x0 + (j % cols) * cell_w
+        y = y0 + (j // cols) * cell_h
+        SCREEN.text(chr(i), (x, y), colors[i % len(colors)])
     SCREEN.show()
     exit_display()
 

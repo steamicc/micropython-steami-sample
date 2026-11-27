@@ -40,10 +40,10 @@ async def wait_for_button():
 
 def display_menu(list, index):
     if not list:
-        SCREEN.text("No device ", "CENTER")
+        SCREEN.text("No device", "CENTER")
         return
     SCREEN.menu(list, index)
 
 def text_x_center_position(text):
-    x_position = (SCREEN.width - (len(text) * 8 * SCREEN.k)) // 2 # Center the text
+    x_position = (SCREEN.width - len(text) * 8) // 2  # Center the text (8 px cells)
     return x_position

@@ -90,7 +90,7 @@ async def display_task():
 
         # Nom de l'appareil + distance locale
         SCREEN.text(device_name, "N")
-        SCREEN.text(f"Me: {local_distance}", (text_x_center_position("Me: XXX"), SCREEN.u(34)), scale=SCREEN.k)
+        SCREEN.text(f"Me: {local_distance}", (text_x_center_position("Me: XXX"), SCREEN.u(34)))
 
         # Affichage des appareils les plus récemment vus
         recent_devices = sorted(
@@ -99,10 +99,11 @@ async def display_task():
             reverse=True
         )[:4]
 
-        y = 50
+        y = SCREEN.u(50)
+        line_h = SCREEN.text_height() + SCREEN.u(2)  # hauteur d'une ligne + marge
         for name, (dist, _) in recent_devices:
-            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center_position("XXXX: XXX"), SCREEN.u(y)), scale=SCREEN.k)
-            y += 10
+            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center_position("XXXX: XXX"), y))
+            y += line_h
 
         SCREEN.show()
         await asyncio.sleep(0.2)
