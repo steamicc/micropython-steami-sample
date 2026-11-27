@@ -1,15 +1,10 @@
 import pyb
 from time import sleep
-import ssd1327
-from machine import SPI, Pin
+from steami import Screen
 
-# Initialisation de l'affichage
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-
-display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
+# Initialisation de l'affichage (au plus tôt : la mémoire de l'image est allouée ici)
+SCREEN = Screen()
+SCREEN.begin()
 
 # Initialisation des LEDs
 led_red = pyb.LED(1)
@@ -19,10 +14,10 @@ delay = 0.5
 
 # Fonctions pour faire clignoter une LED
 def blink_led(led, couleur):
-    display.fill(0)
-    draw_text(display, "LED Allumée(s) :", 50)
-    draw_text(display, f"- LED {couleur}", 70)
-    display.show()
+    SCREEN.clear()
+    draw_text("LED Allumée(s) :", SCREEN.u(50))
+    draw_text(f"- LED {couleur}", SCREEN.u(70))
+    SCREEN.show()
 
     led.on()
     sleep(delay)
@@ -31,11 +26,11 @@ def blink_led(led, couleur):
 
 # Fonction pour faire clignoter deux LEDs
 def blink_two_leds(led1, led2, couleur1, couleur2):
-    display.fill(0)
-    draw_text(display, "LED Allumée(s) :", 50)
-    draw_text(display, f"- LED {couleur1}", 70)
-    draw_text(display, f"- LED{couleur2}", 80)
-    display.show()
+    SCREEN.clear()
+    draw_text("LED Allumée(s) :", SCREEN.u(50))
+    draw_text(f"- LED {couleur1}", SCREEN.u(70))
+    draw_text(f"- LED{couleur2}", SCREEN.u(80))
+    SCREEN.show()
 
     led1.on()
     led2.on()
@@ -47,10 +42,10 @@ def blink_two_leds(led1, led2, couleur1, couleur2):
 # Fonction pour faire clignoter toutes les LEDs
 def blink_all_leds():
 
-    display.fill(0)
-    draw_text(display, "LED Allumée(s) :", 50)
-    draw_text(display, "Toutes les LEDs", 70)
-    display.show()
+    SCREEN.clear()
+    draw_text("LED Allumée(s) :", SCREEN.u(50))
+    draw_text("Toutes les LEDs", SCREEN.u(70))
+    SCREEN.show()
 
     led_red.on()
     led_green.on()
@@ -73,22 +68,28 @@ def normalize_text(text):
     return text
 
 # Fonction pour afficher le texte avec retour à la ligne et centrage automatique
-def draw_text(display, text, y_start, screen_width=128, char_width=8, line_height=8):
+def draw_text(text, y_start):
+    screen_width = SCREEN.width
+    if SCREEN.k > 1:
+        # Marge pour rester dans le cercle de l'écran rond
+        screen_width -= SCREEN.u(10)
+    char_width = 8 * SCREEN.k
+    line_height = 8 * SCREEN.k
     text = normalize_text(text)
     words = text.split(" ")
     line = ""
     y = y_start
     for word in words:
         if len(line + word) * char_width > screen_width:
-            x = (screen_width - len(line.rstrip())*char_width) // 2
-            display.text(line.rstrip(), x, y)
+            x = (SCREEN.width - len(line.rstrip())*char_width) // 2
+            SCREEN.text(line.rstrip(), (x, y), scale=SCREEN.k)
             y += line_height
             line = word + " "
         else:
             line += word + " "
     # Affiche la dernière ligne
-    x = (screen_width - len(line.rstrip())*char_width) // 2
-    display.text(line.rstrip(), x, y)
+    x = (SCREEN.width - len(line.rstrip())*char_width) // 2
+    SCREEN.text(line.rstrip(), (x, y), scale=SCREEN.k)
 
 while True:
     blink_led(led_red, "Rouge")
