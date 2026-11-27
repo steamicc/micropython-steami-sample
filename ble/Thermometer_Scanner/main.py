@@ -4,16 +4,17 @@ import struct
 import time
 
 #  Buttons and Screen gestion
-from machine import SPI, Pin
-import ssd1327
+from machine import Pin
+from steami import Screen
+from steami_screen import DARK, WHITE
+
+# Screen: SSD1327 on V1a/V1b, GC9A01 on V1c. begin() as early as possible:
+# the image memory is allocated at that moment.
+SCREEN = Screen()
+SCREEN.begin()
+
 A_BUTTON = Pin("A_BUTTON", Pin.IN, Pin.PULL_UP)
 B_BUTTON = Pin("B_BUTTON", Pin.IN, Pin.PULL_UP)
-
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
 
 # parameters
 scan_duration = 250  # in ms
@@ -89,48 +90,60 @@ async def scan_loop():
 async def display_loop():
     global captured_devices
     start_time = time.time()
+    u = SCREEN.u
+    k = SCREEN.k
 
     while True:
-        display.fill(0)
+        SCREEN.clear()
 
         if not collected_data:
-            scanning_text = "Scanning ..."
-            display.text(scanning_text, text_x_center_position(scanning_text), 60, 255)
-            display.show()
+            SCREEN.text("Scanning ...", "CENTER")
+            SCREEN.show()
             await asyncio.sleep(2)
             continue
 
         # Display the device name and the index of captured devices
         captured_devices = len(collected_data)
         captured_devices_text = f"{device_index+1}/{captured_devices}"
-        display.text(captured_devices_text, text_x_center_position(captured_devices_text), 10, 255)
+        SCREEN.text(captured_devices_text, "N")
 
         # Display selected device name
         name = list(collected_data.keys())[device_index]
-        display.text(name, text_x_center_position(name), 20, 255)
-        display.framebuf.line(0, 30, 128, 30, 100)
+        SCREEN.text(name, (text_x_center_position(name), u(30)), scale=k)
+        SCREEN.line(0, u(41), SCREEN.width - 1, u(41), DARK)
 
         # Display measurement
         measure = [entry[measurement[measurement_index]] for entry in collected_data[name]] # Get the selected measurement data
         max_measure = max(measure) if measure else 0
         min_measure = min(measure) if measure else 0
-        # Draw the graph
+        # Draw the graph (between y = u(46) and y = u(74), x within the circle)
+        graph_x = u(6)
+        graph_w = u(122) - graph_x
+        graph_bottom = u(74)
+        graph_h = u(28)
         if max_measure != min_measure and len(measure) > 1:
             length = len(measure)
             for i in range(1, length):
-                x1 = int((i - 1) * 127 / (length - 1))
-                y1 = 80 - int((measure[i - 1] - min_measure) / (max_measure - min_measure) * 45)
-                x2 = int(i * 127 / (length - 1))
-                y2 = 80 - int((measure[i] - min_measure) / (max_measure - min_measure) * 45)
+                x1 = graph_x + int((i - 1) * graph_w / (length - 1))
+                y1 = graph_bottom - int((measure[i - 1] - min_measure) / (max_measure - min_measure) * graph_h)
+                x2 = graph_x + int(i * graph_w / (length - 1))
+                y2 = graph_bottom - int((measure[i] - min_measure) / (max_measure - min_measure) * graph_h)
 
-                display.framebuf.line(x1, y1, x2, y2, 255)
+                for d in range(k):  # line k px thick
+                    SCREEN.line(x1, y1 + d, x2, y2 + d, WHITE)
         else:
-            display.framebuf.line(0, 60, 127, 60, 255) # Draw a horizontal line if no data
+            SCREEN.line(graph_x, u(60), graph_x + graph_w, u(60), WHITE) # Draw a horizontal line if no data
 
         # Display the min and max values
-        display.framebuf.line(0, 80, 128, 80, 100)
-        display.text(f"{min_measure:.2f} <", 5, 85, 255)
-        display.text(f"> {max_measure:.2f}", 65, 85, 255)
+        SCREEN.line(0, u(78), SCREEN.width - 1, u(78), DARK)
+        min_text = f"{min_measure:.2f} <"
+        max_text = f"> {max_measure:.2f}"
+        scale = k  # glyph factor: 1 when both texts do not fit side by side
+        while scale > 1 and (len(min_text) + len(max_text)) * 8 * scale + 4 > SCREEN.width - 2 * u(6):
+            scale -= 1
+        y = u(80) + 4 * (k - scale)
+        SCREEN.text(min_text, (u(6), y), scale=scale)
+        SCREEN.text(max_text, (SCREEN.width - u(6) - len(max_text) * 8 * scale, y), scale=scale)
 
         # Display the last value received
         if collected_data[name]:
@@ -141,19 +154,19 @@ async def display_loop():
             else:
                 unit = "%"
             last_measure = f"{measurement[measurement_index][0].upper()}: {collected_data[name][-1][measurement[measurement_index]]:.2f}{unit}"
-            display.text(last_measure, text_x_center_position(last_measure), 100, 255)
+            SCREEN.text(last_measure, (text_x_center_position(last_measure), u(90)), scale=k)
 
         # Display the time since the start of the program
-        display.framebuf.line(0, 110, 128, 110, 100)
+        SCREEN.line(0, u(99), SCREEN.width - 1, u(99), DARK)
         duration = f"{int(time.time() - start_time)}s"
-        display.text(duration, text_x_center_position(duration), 115, 255)
+        SCREEN.text(duration, "S")
 
-        display.show()
+        SCREEN.show()
         await asyncio.sleep(1)
 
-# Function to center the text on the display
+# Function to center the text on the display (glyphs scaled by SCREEN.k)
 def text_x_center_position(text):
-    x_position = (128 - (len(text) * 8) ) // 2 # Center the text
+    x_position = (SCREEN.width - (len(text) * 8 * SCREEN.k)) // 2 # Center the text
     return x_position
 
 # Function to handle button presses and change the displayed device or measurement

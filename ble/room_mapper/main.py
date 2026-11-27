@@ -1,4 +1,4 @@
-"""BLE RSSI room mapper example using aioble, SSD1327 OLED and DAPLink flash.
+"""BLE RSSI room mapper example using aioble, OLED screen and DAPLink flash.
 
 One board acts as scanner while 2-3 other boards act as beacons.
 The user moves around the room with the scanner and presses RIGHT to
@@ -18,7 +18,7 @@ CSV format:
 
 Hardware:
     - 3-4 STeaMi boards (2-3 beacons + 1 scanner)
-    - SSD1327 OLED + D-PAD + DAPLink flash on scanner board
+    - OLED/LCD screen (SSD1327 on V1a/V1b, GC9A01 on V1c) + D-PAD + DAPLink flash on scanner board
 
 Learning goals:
     - Experimental data collection methodology
@@ -31,10 +31,9 @@ import uasyncio as asyncio
 from time import sleep_ms, ticks_diff, ticks_ms
 
 import aioble
-import ssd1327
 from daplink_bridge import DaplinkBridge
 from daplink_flash import DaplinkFlash
-from machine import I2C, SPI, Pin
+from machine import I2C, Pin
 from mcp23009e import MCP23009E
 from mcp23009e.const import (
     MCP23009_BTN_DOWN,
@@ -46,7 +45,13 @@ from mcp23009e.const import (
     MCP23009_LOGIC_LOW,
     MCP23009_PULLUP,
 )
-from steami_screen import LIGHT, Screen, SSD1327Display
+from steami import Screen
+from steami_screen import LIGHT
+
+# === Display ===
+# begin() first: the frame buffer needs a large block of RAM.
+screen = Screen()
+screen.begin()
 
 # === Beacon names ===
 BEACON_NAMES = ["Beacon_M1", "Beacon_M2", "Beacon_M3"]
@@ -63,14 +68,6 @@ RSSI_OFFSET = {
 
 # A beacon not heard for this long is shown as "---" and not recorded.
 RSSI_MAX_AGE_MS = 3000
-
-# === Display ===
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
-screen = Screen(display)
 
 # === Buttons ===
 i2c = I2C(1)
@@ -141,7 +138,7 @@ def menu_select(title, items):
         screen.clear()
         screen.title(title)
         screen.menu(items, selected=selected)
-        screen.subtitle("UP/DOWN: nav", "RIGHT: confirm")
+        screen.subtitle("UP/DOWN: nav", "RIGHT: OK")
         screen.show()
 
         sleep_ms(150)
@@ -182,7 +179,7 @@ async def beacon_display_task(beacon_name):
     while not stop_flag:
         screen.clear()
         screen.title("BEACON")
-        screen.subtitle(beacon_name, "Broadcasting...", "LEFT: menu")
+        screen.subtitle(beacon_name, "Broadcasting", "LEFT: menu")
         screen.show()
         await asyncio.sleep_ms(1000)
 
@@ -265,16 +262,17 @@ async def scanner_display_task():
 
             measures = fresh_rssi()
             cx, cy = screen.center
-            y = 38
+            k = screen.k
+            y = screen.u(38)
             for name in BEACON_NAMES:
                 rssi = measures.get(name, "---")
                 short = name[-2:]
                 label = f"{short}: {rssi} dBm"
-                x = cx - len(label) * 4
-                display.text(label, x, y, LIGHT)
-                y += 14
+                x = cx - len(label) * 4 * k
+                screen.text(label, (x, y), LIGHT, scale=k)
+                y += screen.u(14)
 
-            screen.subtitle(f"#{point_id} R:rec L:stop")
+            screen.subtitle(f"#{point_id}", "R:rec L:stop")
             screen.show()
 
         await asyncio.sleep_ms(200)
@@ -303,7 +301,7 @@ while True:
 
     if mode_idx == 1:
         # Beacon mode — select beacon ID
-        beacon_idx = menu_select("SELECT BEACON", BEACON_NAMES)
+        beacon_idx = menu_select("PICK BEACON", BEACON_NAMES)
         beacon_name = BEACON_NAMES[beacon_idx]
 
         screen.clear()
@@ -316,8 +314,8 @@ while True:
 
         # Back to menu after LEFT pressed
         screen.clear()
-        screen.title("BEACON STOPPED")
-        screen.subtitle("Returning to menu...")
+        screen.title("STOPPED")
+        screen.subtitle("Back to menu")
         screen.show()
         sleep_ms(1000)
 

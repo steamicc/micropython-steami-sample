@@ -1,4 +1,4 @@
-"""BLE RSSI proximity detector example using aioble and SSD1327 OLED.
+"""BLE RSSI proximity detector example using aioble and OLED screen.
 
 Two STeaMi boards run this same file:
     - Hold button UP during the 10-second startup window → BEACON mode
@@ -10,7 +10,7 @@ to reduce noise while keeping fast response.
 
 Hardware:
     - 2 x STM32WB55 BLE radio
-    - SSD1327 128x128 OLED display (round)
+    - Round OLED/LCD screen (SSD1327 128x128 on V1a/V1b, GC9A01 240x240 on V1c)
     - MCP23009E D-PAD (button UP used for mode selection)
 
 Learning goals:
@@ -23,8 +23,7 @@ import uasyncio as asyncio
 from time import sleep_ms
 
 import aioble
-import ssd1327
-from machine import I2C, SPI, Pin
+from machine import I2C, Pin
 from mcp23009e import MCP23009E
 from mcp23009e.const import (
     MCP23009_BTN_UP,
@@ -33,19 +32,17 @@ from mcp23009e.const import (
     MCP23009_LOGIC_LOW,
     MCP23009_PULLUP,
 )
-from steami_screen import GRAY, LIGHT, RED, Screen, SSD1327Display
+from steami import Screen
+from steami_screen import GRAY, LIGHT, RED
+
+# === Display ===
+# begin() first: the frame buffer needs a large block of RAM.
+screen = Screen()
+screen.begin()
 
 # Same name as the first beacon of the hot_cold, room_mapper and
 # trilateration examples: one beacon board serves all of them.
 BEACON_NAME = "Beacon_M1"
-
-# === Display ===
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
-screen = Screen(display)
 
 # === Buttons ===
 i2c = I2C(1)
@@ -100,9 +97,9 @@ def select_mode():
         screen.clear()
         screen.title("SELECT MODE")
         screen.subtitle(
-            "Hold UP: BEACON",
-            "Release: SCANNER",
-            f"Starting in {remaining}s...",
+            "UP: BEACON",
+            "else: SCANNER",
+            f"{remaining}s...",
         )
         screen.show()
         sleep_ms(1000)
@@ -139,7 +136,7 @@ async def beacon_display_task():
     while True:
         screen.clear()
         screen.title("BEACON")
-        screen.subtitle(BEACON_NAME, "Broadcasting...")
+        screen.subtitle(BEACON_NAME, "Broadcasting")
         screen.show()
         await asyncio.sleep_ms(1000)
 

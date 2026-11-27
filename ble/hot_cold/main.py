@@ -1,11 +1,11 @@
-"""BLE Hot/Cold treasure hunt game using aioble and SSD1327 OLED.
+"""BLE Hot/Cold treasure hunt game using aioble and the OLED/LCD screen.
 
 Two STeaMi boards run this same file:
     - UP/DOWN to pick TREASURE or SEEKER, RIGHT to confirm
     - LEFT at any time to return to mode selection
 
 The seeker scans for the treasure beacon, maps RSSI to proximity zones,
-displays feedback on the OLED and plays buzzer beeps that accelerate
+displays feedback on the screen and plays buzzer beeps that accelerate
 as the player gets closer.
 
 Proximity zones (0-100%):
@@ -21,7 +21,7 @@ avoid flickering at zone boundaries.
 
 Hardware:
     - 2 x STM32WB55 BLE radio
-    - SSD1327 128x128 OLED display (round)
+    - Round OLED/LCD screen (SSD1327 128x128 on V1a/V1b, GC9A01 240x240 on V1c)
     - MCP23009E D-PAD (UP/DOWN/LEFT/RIGHT)
     - Buzzer on the SPEAKER pin (hardware PWM, Timer 1 channel 4)
 
@@ -37,8 +37,7 @@ import uasyncio as asyncio
 from time import ticks_ms, ticks_diff
 
 import aioble
-import ssd1327
-from machine import I2C, SPI, Pin
+from machine import I2C, Pin
 from mcp23009e import MCP23009E
 from mcp23009e.const import (
     MCP23009_BTN_DOWN,
@@ -51,17 +50,15 @@ from mcp23009e.const import (
     MCP23009_PULLUP,
 )
 from pyb import Timer
-from steami_screen import BLUE, RED, Screen, SSD1327Display, YELLOW
+from steami import Screen
+from steami_screen import BLUE, RED, YELLOW
 
 BEACON_NAME = "Beacon_M1"
 
 # === Display ===
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
-screen = Screen(display)
+# begin() first: the frame buffer needs a large block of RAM.
+screen = Screen()
+screen.begin()
 
 # === Buzzer ===
 # Hardware PWM on SPEAKER pin (PA11 = TIM1_CH4): the timer generates the

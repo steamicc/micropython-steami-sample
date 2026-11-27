@@ -1,4 +1,4 @@
-"""BLE beacon advertising example using aioble and SSD1327 OLED.
+"""BLE beacon advertising example using aioble and OLED screen.
 
 Broadcasts a BLE advertisement containing the board name and a live
 temperature reading. The beacon is visible
@@ -6,7 +6,8 @@ from any BLE scanner app (nRF Connect, LightBlue, etc.).
 
 Hardware:
     - STM32WB55 BLE radio
-    - SSD1327 128x128 OLED display (round)
+    - Round OLED/LCD screen, chosen by steami for the board release:
+      SSD1327 128x128 on V1a/V1b, GC9A01 240x240 on V1c
     - Temperature sensor, chosen by steami for the board release:
       WSEN-HIDS on V1a/V1b, BME280 on V1c
 
@@ -22,10 +23,12 @@ import struct
 import uasyncio as asyncio
 
 import aioble
-import ssd1327
-from machine import SPI, Pin
-from steami_screen import Screen, SSD1327Display
-from steami import Temperature
+from steami import Screen, Temperature
+
+# === Display ===
+# begin() first: the frame buffer needs a large block of RAM.
+screen = Screen()
+screen.begin()
 
 # === BLE setup ===
 ble = bluetooth.BLE()
@@ -35,14 +38,6 @@ mac_bytes = ble.config("mac")[1]
 mac_suffix = "".join(f"{b:02X}" for b in mac_bytes[-2:])
 DEVICE_NAME = f"STeaMi-{mac_suffix}"
 print("Device name:", DEVICE_NAME)
-
-# === Display ===
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-display = SSD1327Display(ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs))
-screen = Screen(display)
 
 # === Sensor ===
 temperature_sensor = Temperature()
@@ -126,7 +121,7 @@ async def display_task():
         screen.clear()
         screen.title("BLE BEACON")
         screen.value(f"{temperature:.1f}", unit="C")
-        screen.subtitle(DEVICE_NAME, "Advertising...")
+        screen.subtitle(DEVICE_NAME, "Advertising")
         screen.show()
         await asyncio.sleep_ms(500)
 

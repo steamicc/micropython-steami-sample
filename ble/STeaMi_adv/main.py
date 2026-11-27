@@ -3,7 +3,7 @@ import uasyncio as asyncio
 import aioble
 import struct
 from time import ticks_ms
-from pins import *  # Assure-toi que DISTANCE et display sont bien définis ici
+from pins import *  # Assure-toi que DISTANCE et SCREEN sont bien définis ici
 
 # === Initialisation BLE ===
 ble = bluetooth.BLE()
@@ -43,9 +43,6 @@ def extract_manufacturer_data(adv_bytes):
             return adv_bytes[i + 2 : i + 1 + length]
         i += 1 + length
     return None
-
-def text_x_center(text):
-    return max((128 - len(text) * 8) // 2, 0)
 
 # === Tâches ===
 async def ble_task():
@@ -89,11 +86,11 @@ async def sensor_task():
 
 async def display_task():
     while True:
-        display.fill(0)
+        SCREEN.clear()
 
         # Nom de l'appareil + distance locale
-        display.text(device_name, text_x_center(device_name), 20, 255)
-        display.text(f"Me: {local_distance}", text_x_center("Me: XXX"), 30, 255)
+        SCREEN.text(device_name, "N")
+        SCREEN.text(f"Me: {local_distance}", (text_x_center_position("Me: XXX"), SCREEN.u(34)), scale=SCREEN.k)
 
         # Affichage des appareils les plus récemment vus
         recent_devices = sorted(
@@ -104,10 +101,10 @@ async def display_task():
 
         y = 50
         for name, (dist, _) in recent_devices:
-            display.text(f"{name[-4:]}: {dist}", text_x_center("XXXX: XXX"), y, 255)
+            SCREEN.text(f"{name[-4:]}: {dist}", (text_x_center_position("XXXX: XXX"), SCREEN.u(y)), scale=SCREEN.k)
             y += 10
 
-        display.show()
+        SCREEN.show()
         await asyncio.sleep(0.2)
 
 # === Programme principal ===

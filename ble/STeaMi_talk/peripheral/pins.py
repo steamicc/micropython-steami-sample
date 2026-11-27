@@ -1,10 +1,13 @@
 import asyncio
 from time import sleep
 
-import ssd1327
+from machine import Pin
+from steami import Distance, Screen
 
-from machine import SPI, Pin
-from steami import Distance
+# Screen: SSD1327 on V1a/V1b, GC9A01 on V1c. begin() as early as possible:
+# the image memory is allocated at that moment.
+SCREEN = Screen()
+SCREEN.begin()
 
 LED_RED = Pin("LED_RED", Pin.OUT_PP)
 LED_GREEN = Pin("LED_GREEN", Pin.OUT_PP)
@@ -19,13 +22,6 @@ SPEAKER = Pin("SPEAKER", Pin.OUT_PP)
 # Sensors: steami picks the right chip for the board release
 # (V1a, V1b or V1c). Creating them touches no hardware.
 DISTANCE = Distance()  # DISTANCE.read(): distance in mm
-
-spi = SPI(1)
-dc = Pin("DATA_COMMAND_DISPLAY")
-res = Pin("RST_DISPLAY")
-cs = Pin("CS_DISPLAY")
-
-display = ssd1327.WS_OLED_128X128_SPI(spi, dc, res, cs)
 
 async def wait_for_button():
     while True:
@@ -42,13 +38,8 @@ async def wait_for_button():
 
 def display_menu(list, index):
     if not list:
-        display.text("No device ", text_x_center_position("No Device"), 65, 255)
+        SCREEN.text("No device", "CENTER")
         return
-    for i, item in enumerate(list):
-        if i == index:
-            display.text(">", 15, ((i + 1) * 10)+65, 255)
-        display.text(item , 25, ((i + 1) * 10)+65, 255)
-
-def text_x_center_position(text):
-    x_position = (128 - (len(text) * 8) ) // 2 # Center the text
-    return x_position
+    # Sans le prefixe commun : sur 240 px, "> Client-XXXX" serait coupe
+    names = [n[len("Client-"):] if n.startswith("Client-") else n for n in list]
+    SCREEN.menu(names, index)
