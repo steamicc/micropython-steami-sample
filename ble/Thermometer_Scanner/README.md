@@ -3,8 +3,8 @@
 This project is a BLE-based personalised thermometer that scans for specific BLE devices, collects temperature and humidity data, and displays the information on an OLED screen.  
 
 ## Features  
-- **BLE Scanning**: Continuously scans for BLE devices and collects temperature and humidity data from allowed devices.  
-- **Data Decoding**: Decodes the advertising data received from BLE sensors.  
+- **BLE Scanning**: Continuously scans for BLE devices and collects temperature and humidity data from the thermometers in range (or only from the allowed names).  
+- **Data Decoding**: Decodes the advertising data of the pvvx firmware with `xiaomi_ble.py`, shared with [`../xiaomi_reference/`](../xiaomi_reference/).  
 - **OLED Display**: Displays the collected data, including graphs, on a 128x128 OLED screen.  
 - **Button Interaction**: Allows switching between devices and measurements using buttons.  
 
@@ -20,6 +20,15 @@ This project is a BLE-based personalised thermometer that scans for specific BLE
     - `aioble` library for BLE communication  
     - `steami` layer for the screen  
 
+## Run
+
+`main.py` imports `xiaomi_ble.py` from the same folder:
+
+```bash
+cd ble/Thermometer_Scanner
+mpremote mount . run main.py
+```
+
 ## Parameters  
 - **Scan Duration**: 250 ms  
 - **Scan Interval**: 30,000 µs  
@@ -28,8 +37,9 @@ This project is a BLE-based personalised thermometer that scans for specific BLE
 
 ## How It Works  
 1. **BLE Scanning**:  
-     - The program scans for BLE devices within the allowed list (`chambre`, `salon`, `cuisine`).  
-     - If valid data is received, it decodes the temperature and humidity values and stores them.  
+     - The program keeps every Xiaomi thermometer it can read, up to `MAX_SENSORS` (8). Set `allowed_devices` to a list of BLE names (for example `["chambre", "salon", "cuisine"]`) to follow only those.  
+     - It decodes the service data of the advertising frame (AD type 0x16) rather than fixed byte offsets, so the three pvvx formats are recognised: "custom" (pvvx), "atc1441" and unencrypted BTHome v2. The original Xiaomi firmware encrypts its data and is ignored.  
+     - It keeps the last `MAX_DATA_PER_SENSOR` (100) readings of each sensor.  
 
 2. **Data Display**:  
      - The OLED screen shows the current device, measurement graph, min/max values, and the last recorded value.  
@@ -43,7 +53,7 @@ This project is a BLE-based personalised thermometer that scans for specific BLE
 This project supports Xiaomi Mijia LYWSD03MMC thermometers, including all six hardware versions.  
 
 ### Customizing Device Names  
-The names of the thermometers can be personalized using the [TelinkMiFlasher](https://pvvx.github.io/ATC_MiThermometer/TelinkMiFlasher.html) tool. This allows you to configure the names to match the expected device names (`chambre`, `salon`, `cuisine`).  
+The names of the thermometers can be personalized using the [TelinkMiFlasher](https://pvvx.github.io/ATC_MiThermometer/TelinkMiFlasher.html) tool. The screen shows the BLE name of each sensor (or the end of its address), and `allowed_devices` can restrict the scan to some names.  
 
 ### Configuration Steps  
 1. Visit [ATC_MiThermometer](https://pvvx.github.io/ATC_MiThermometer).  
@@ -55,7 +65,8 @@ The names of the thermometers can be personalized using the [TelinkMiFlasher](ht
 - The program is designed to work with BLE advertising packets from these devices.  
 
 ## Code Overview  
-- **`decode_data(data, sensor_name)`**: Decodes temperature and humidity from BLE advertising data.  
+- **`xiaomi_ble.decode(frame)`**: Decodes temperature, humidity and battery from a BLE advertising frame.  
+- **`store_data(address, m)`**: Stores a decoded reading for a sensor.  
 - **`scan_loop()`**: Continuously scans for BLE devices and processes their data.  
 - **`display_loop()`**: Updates the OLED display with the collected data.  
 - **`button_pressed()`**: Handles button presses to switch devices or measurements.  

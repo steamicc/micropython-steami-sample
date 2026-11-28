@@ -1,12 +1,12 @@
 import aioble
 import asyncio
-import struct
 import time
 
 #  Buttons and Screen gestion
 from machine import Pin
 from steami import Screen
 from steami_screen import DARK, WHITE
+from xiaomi_ble import decode
 
 # Screen: SSD1327 on V1a/V1b, GC9A01 on V1c. begin() as early as possible:
 # the image memory is allocated at that moment.
@@ -25,66 +25,62 @@ scan_pause = 0.1  # in seconds
 # Paramètre : nombre maximum de mesures stockées par capteur
 MAX_DATA_PER_SENSOR = 100
 
+# Maximum number of sensors kept in memory
+MAX_SENSORS = 8
+
 #constants
 measurement = ["temperature", "humidity", "batteryLevel", "batteryPercentage"]
-allowed_devices = ["Nord", "Sud", "Est", "Ouest", "Maison"]
+# BLE names of the sensors to follow; empty: every readable thermometer in range
+allowed_devices = []
 
 # variables
-collected_data = {}
+collected_data = {}  # address -> list of readings
+sensor_names = {}  # address -> BLE name
 captured_devices = 0
 device_index = 0
 measurement_index = 0
 
-# Function to decode the advertising data received from the sensors
-def decode_data(data, sensor_name):
-    print(f"Raw data {data}")
+# Function to store the readings decoded by xiaomi_ble.decode()
+def store_data(address, m):
+    if address not in collected_data:
+        if len(collected_data) >= MAX_SENSORS:
+            return
+        collected_data[address] = []
 
-    for i in range(len(data)):
-        print(f"Raw data [{i}]: {data[i]}")
-        if i < len(data)-1:
-            print(f"Raw data [{i}:{i+2}] in hex : {struct.unpack('<h', data[i:i+2])[0]}")
-
-    temperature = struct.unpack("<h", data[13:15])[0] / 100 # in °C
-    humidity = struct.unpack("<h", data[16:18])[0] / 100 # in %
-    batteryLevel = struct.unpack("<h", data[0:2])[0] / 100 # in Volts (A revoir car données incohérentes)
-    batteryPercentage = data[11] # in %
-
-     # Get the current time
-    current_time = time.strftime("%H:%M:%S", time.localtime())
-
-    if sensor_name not in collected_data:
-        collected_data[sensor_name] = []
-
-    collected_data[sensor_name].append({
-        "time": current_time,
-        "temperature": temperature,
-        "humidity": humidity,
-        "batteryLevel": batteryLevel,
-        "batteryPercentage": batteryPercentage
+    collected_data[address].append({
+        "time": "{:02d}:{:02d}:{:02d}".format(*time.localtime()[3:6]),  # MicroPython has no strftime
+        "temperature": m["temperature"],
+        "humidity": m["humidity"],
+        "batteryLevel": m["voltage"],  # in volts
+        "batteryPercentage": m["battery"],  # in %
     })
 
-    if len(collected_data[sensor_name]) > MAX_DATA_PER_SENSOR:
-        collected_data[sensor_name].pop(0)
+    if len(collected_data[address]) > MAX_DATA_PER_SENSOR:
+        collected_data[address].pop(0)
 
-    print(f"-> Sensor: {sensor_name} - Temperature:{temperature:.2f} C, Humidity: {humidity:.2f} %, Battery Level: {batteryLevel:.2f} V, Battery Percentage: {batteryPercentage:.2f} %, at {current_time}")
+    print("-> {}: {} C, {} %, battery {} %".format(
+        sensor_names.get(address, address), m["temperature"], m["humidity"], m["battery"]))
 
 
-# Function to scan for BLE devices and receive their data tend to fill the memory in 10 min
+# Function to scan for BLE devices and receive their data
 async def scan_loop():
     print("---Starting Scan---")
     while True:
         async with aioble.scan(scan_duration, interval_us=scan_interval, window_us=scan_window, active=True) as scanner:
             async for result in scanner:
-                if result.name() in allowed_devices:
-                    print(f"======> Found sensor : {result.name()}")
-                    if result.adv_data:
-                        if (len(result.adv_data) > 17):  # Check if received complete data
-                            decode_data(result.adv_data, result.name())
-                        else:
-                            print("==> Invalid data length")
-                    else:
-                        print("==> no adv_data")
-            asyncio.sleep(scan_pause)  # Pause between scans
+                # the service data of the pvvx formats (custom, atc1441, BTHome) is in the
+                # advertising data; the BLE name may only come with the scan response
+                m = decode(result.adv_data) or decode(result.resp_data)
+                if m is None or m["format"] == "mibeacon":
+                    continue
+                address = m["mac"] or result.device.addr_hex().upper()
+                name = result.name()
+                if name:
+                    sensor_names[address] = name
+                if allowed_devices and sensor_names.get(address) not in allowed_devices:
+                    continue
+                store_data(address, m)
+        await asyncio.sleep(scan_pause)  # Pause between scans
 
 # Function to display the data on the screen
 async def display_loop():
@@ -108,12 +104,15 @@ async def display_loop():
         SCREEN.text(captured_devices_text, "N")
 
         # Display selected device name
-        name = list(collected_data.keys())[device_index]
+        address = list(collected_data.keys())[device_index]
+        name = sensor_names.get(address, address[-8:])
         SCREEN.text(name, (text_x_center_position(name), u(30)))
         SCREEN.line(0, u(41), SCREEN.width - 1, u(41), DARK)
 
         # Display measurement
-        measure = [entry[measurement[measurement_index]] for entry in collected_data[name]] # Get the selected measurement data
+        # Get the selected measurement data, without the missing readings (None)
+        measure = [entry[measurement[measurement_index]] for entry in collected_data[address]
+                   if entry[measurement[measurement_index]] is not None]
         max_measure = max(measure) if measure else 0
         min_measure = min(measure) if measure else 0
         # Draw the graph (between y = u(46) and y = u(74), x within the circle)
@@ -148,14 +147,14 @@ async def display_loop():
         y += line_h
 
         # Display the last value received
-        if collected_data[name]:
+        if measure:
             if measurement[measurement_index] == "temperature":
                 unit = "C"
             elif measurement[measurement_index] == "batteryLevel":
                 unit = "V"
             else:
                 unit = "%"
-            last_measure = f"{measurement[measurement_index][0].upper()}: {collected_data[name][-1][measurement[measurement_index]]:.2f}{unit}"
+            last_measure = f"{measurement[measurement_index][0].upper()}: {measure[-1]:.2f}{unit}"
             SCREEN.text(last_measure, (text_x_center_position(last_measure), y))
 
         # Display the time since the start of the program
