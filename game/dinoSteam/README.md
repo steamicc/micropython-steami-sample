@@ -16,9 +16,8 @@ This project is a MicroPython-based mini game inspired by the classic "Dino Run"
 ## Hardware Requirements
 
 * Microcontroller compatible with MicroPython (e.g. Pyboard)
-* SSD1327 OLED display (SPI)
+* Screen through `steami.Screen`: SSD1327 OLED (128x128) on V1a/V1b, GC9A01 round TFT (240x240) on V1c
 * 3 Buttons (A, B, MENU)
-* SPI pins wired for display
 * No additional sensors required
 
 ## File Descriptions

@@ -12,13 +12,13 @@ This project is a BLE-based personalised thermometer that scans for specific BLE
 - **Hardware**:  
     - STM32WB55 microcontroller  
     - BLE-compatible sensors (e.g., Xiaomi Mijia LYWSD03MMC)  
-    - 128x128 OLED display (SSD1327 driver)  
+    - Screen through `steami.Screen`: SSD1327 OLED (128x128) on V1a/V1b, GC9A01 round TFT (240x240) on V1c  
     - Two buttons for interaction  
 
 - **Software**:  
     - MicroPython  
     - `aioble` library for BLE communication  
-    - `ssd1327` library for OLED display  
+    - `steami` layer for the screen  
 
 ## Parameters  
 - **Scan Duration**: 250 ms  

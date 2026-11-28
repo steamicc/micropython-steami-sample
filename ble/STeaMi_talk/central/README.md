@@ -15,7 +15,7 @@ This MicroPython project implements a BLE **central device** that scans for peri
 ## Hardware Requirements
 
 - Microcontroller with BLE support (e.g. Pyboard D-series)
-- SSD1327 OLED display (SPI)
+- Screen through `steami.Screen`: SSD1327 OLED (128x128) on V1a/V1b, GC9A01 round TFT (240x240) on V1c
 - Buttons (A, B, Menu)
 - RGB LEDs
 
