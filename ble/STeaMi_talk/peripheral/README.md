@@ -16,7 +16,7 @@ This project implements a Bluetooth Low Energy (BLE) peripheral device using Mic
 
 * Microcontroller with BLE support (e.g. Pyboard D-series)
 * VL53L1X time-of-flight sensor (I²C)
-* SSD1327 OLED display (SPI)
+* Screen through `steami.Screen`: SSD1327 OLED (128x128) on V1a/V1b, GC9A01 round TFT (240x240) on V1c
 * 3 Buttons (A, B, Menu)
 * RGB LEDs
 

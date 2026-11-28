@@ -6,7 +6,7 @@ First step of the BLE localization path: the other examples (`rssi_proximity`, `
 
 ## Hardware
 
-- 1 STeaMi board (any release; on a V1c the screen stays black, but the advertisement works)
+- 1 STeaMi board, any release (V1a, V1b or V1c)
 - A phone with a BLE scanner app (nRF Connect, LightBlue, etc.)
 
 ## Run

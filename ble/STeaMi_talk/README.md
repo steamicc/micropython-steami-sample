@@ -29,7 +29,7 @@ This project implements a complete BLE-based system using MicroPython, consistin
 
 * Microcontroller with BLE and MicroPython support
 * VL53L1X distance sensor (I²C)
-* SSD1327 OLED display (SPI)
+* Screen through `steami.Screen`: SSD1327 OLED (128x128) on V1a/V1b, GC9A01 round TFT (240x240) on V1c
 * Buttons: A, B, Menu
 
 ## How to Use
