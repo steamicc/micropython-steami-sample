@@ -197,7 +197,7 @@ STeaMi-P2 received 250 mm from STeaMi-P1 via STeaMi-R1 (1 hops)
 ✅ Masquage XOR : les données ne sont pas lisibles en clair (sans être un vrai chiffrement)
 ✅ Propagation multi-sauts : communication indirecte fiable
 ✅ Architecture modulaire : facile à étendre à N relais / N périphériques
-✅ Visualisation OLED : affichage local de l’état (V1a/V1b ; l’écran d’une V1c reste noir pour l’instant)
+✅ Visualisation à l’écran : affichage local de l’état via `steami.Screen` (OLED SSD1327 sur V1a/V1b, TFT rond GC9A01 sur V1c)
 
 --- 
 

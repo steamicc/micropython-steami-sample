@@ -32,7 +32,7 @@ Each example is a folder containing a `main.py` script and the helper modules it
 * **Firmware**: the STeaMi MicroPython firmware **v0.31.0 or later** (`steami-micropython-firmware-vX.Y.Z.hex`) from the [micropython-steami-lib releases](https://github.com/steamicc/micropython-steami-lib/releases); the latest is [v0.31.3](https://github.com/steamicc/micropython-steami-lib/releases/tag/v0.31.3). It includes the drivers, the `steami` layer (with `steami.Screen`) and `aioble`.
 * **Tooling**: [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html) (official MicroPython tool)
 
-The examples that draw on the screen space their text with `SCREEN.text_height()`, which first ships in [v0.31.0](https://github.com/steamicc/micropython-steami-lib/releases/tag/v0.31.0). On an older firmware they stop with `AttributeError: text_height`.
+The examples that draw on the screen space their text with `SCREEN.text_height()`, which first ships in [v0.31.0](https://github.com/steamicc/micropython-steami-lib/releases/tag/v0.31.0). On v0.30.x they stop with `AttributeError: text_height`; before v0.30.0, `steami.Screen` does not exist yet and `from steami import Screen` fails with an `ImportError`.
 
 > [!WARNING]
 > Firmware v0.31.0 moves the MicroPython filesystem: on a board coming from an older firmware, the first boot reformats it and every file stored on the board is lost. Copy your files off the board before updating.
