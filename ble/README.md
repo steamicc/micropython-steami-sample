@@ -17,6 +17,7 @@ These examples build on each other, from a single beacon to indoor positioning. 
 - [`STeaMi_adv/`](STeaMi_adv/) — share distance readings between boards through BLE advertising
 - [`STeaMi_talk/`](STeaMi_talk/) — central and peripheral exchanging data over a BLE connection
 - [`Thermometer_Scanner/`](Thermometer_Scanner/) — collect temperature and humidity from nearby BLE sensors
+- [`xiaomi_reference/`](xiaomi_reference/) — compare the board temperature and humidity with a Xiaomi LYWSD03MMC received over BLE
 
 ## Troubleshooting
 
